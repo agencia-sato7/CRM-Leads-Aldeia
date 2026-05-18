@@ -1,7 +1,7 @@
 {
   "_versions": {
-    "send-onboarding-email": 7,
-    "send-recovery-email": 1,
-    "send-2fa-email": 3
+    "send-2fa-email": 2,
+    "send-onboarding-email": 2,
+    "send-recovery-email": 2
   }
 }

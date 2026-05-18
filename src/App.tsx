@@ -1,28 +1,169 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import Index from './pages/Index'
-import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import Index from './pages/Index'
+import Leads from './pages/Leads'
+import Opportunities from './pages/Opportunities'
+import PriceTable from './pages/PriceTable'
+import Onboarding from './pages/Onboarding'
+import Resources from './pages/Resources'
+import Admin from './pages/Admin'
+import Team from './pages/Team'
+import Roles from './pages/Roles'
+import Customers from './pages/Customers'
+import NotFound from './pages/NotFound'
+import { RequireRole } from './components/RequireRole'
+import { RequirePermission } from './components/RequirePermission'
+import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import TwoFactorAuth from './pages/TwoFactorAuth'
+import { useDataStore } from './stores/use-data-store'
+import { AuthProvider, useAuth } from './hooks/use-auth'
+import { useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
+const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+  const { session, loading, is2FAVerified } = useAuth()
+  const location = useLocation()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    )
+  }
+  if (!session)
+    return <Navigate to="/login" state={{ from: location }} replace />
+  if (!is2FAVerified)
+    return <Navigate to="/2fa" state={{ from: location }} replace />
+
+  return <>{children}</>
+}
+
+const DataInitializer = ({ children }: { children: React.ReactNode }) => {
+  const { session } = useAuth()
+  const fetchInitialData = useDataStore((s) => s.fetchInitialData)
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchInitialData()
+    }
+  }, [session?.user?.id, fetchInitialData])
+
+  return <>{children}</>
+}
 
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+  <BrowserRouter
+    future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
+  >
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <DataInitializer>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/2fa" element={<TwoFactorAuth />} />
+
+            <Route
+              element={
+                <RequireAuth>
+                  <Layout />
+                </RequireAuth>
+              }
+            >
+              <Route path="/" element={<Index />} />
+              <Route
+                path="/leads"
+                element={
+                  <RequirePermission resource="leads">
+                    <Leads />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/opportunities"
+                element={
+                  <RequirePermission resource="opportunities">
+                    <Opportunities />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/price-table"
+                element={
+                  <RequirePermission resource="price-table">
+                    <PriceTable />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/onboarding"
+                element={
+                  <RequirePermission resource="onboarding">
+                    <Onboarding />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/resources"
+                element={
+                  <RequireRole role="ADMIN">
+                    <Resources />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/team"
+                element={
+                  <RequireRole role="ADMIN">
+                    <Team />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/customers"
+                element={
+                  <RequirePermission resource="customers">
+                    <Customers />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <RequireRole role="ADMIN">
+                    <Admin />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/roles"
+                element={
+                  <RequireRole role="ADMIN">
+                    <Roles />
+                  </RequireRole>
+                }
+              />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </DataInitializer>
+      </TooltipProvider>
+    </AuthProvider>
   </BrowserRouter>
 )
 

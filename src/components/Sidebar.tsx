@@ -125,7 +125,7 @@ export function Sidebar() {
                 className={cn(
                   'p-3 rounded-full transition-all duration-300 hover:bg-white/20 relative group',
                   isActive
-                    ? 'bg-red-600 text-white hover:bg-red-600 shadow-lg shadow-red-600/30'
+                    ? 'bg-[#227b50] text-white hover:bg-[#227b50] shadow-lg shadow-[#227b50]/30'
                     : 'text-white/70',
                 )}
               >

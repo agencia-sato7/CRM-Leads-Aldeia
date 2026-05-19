@@ -1,6 +1,6 @@
 {
   "_versions": {
-    "send-onboarding-email": 8,
-    "send-recovery-email": 8
+    "send-onboarding-email": 10,
+    "send-recovery-email": 10
   }
 }

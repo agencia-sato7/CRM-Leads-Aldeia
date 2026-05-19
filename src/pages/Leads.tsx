@@ -172,8 +172,7 @@ export default function Leads() {
     marketingStatus: '',
     objectives: '',
     notes: '',
-    investsInMkt: false,
-    hasAgency: false,
+    quantity: 1,
     product_id: '',
   })
 
@@ -218,8 +217,7 @@ export default function Leads() {
       objectives: formData.objectives,
       notes: formData.notes,
       userId: currentUser.role === 'ADMIN' ? null : currentUser.id,
-      investsInMkt: formData.investsInMkt,
-      hasAgency: formData.hasAgency,
+      quantity: formData.quantity,
     } as any
 
     if (formData.product_id) {
@@ -249,8 +247,7 @@ export default function Leads() {
         marketingStatus: '',
         objectives: '',
         notes: '',
-        investsInMkt: false,
-        hasAgency: false,
+        quantity: 1,
         product_id: '',
       })
     } catch (err: any) {
@@ -472,7 +469,7 @@ export default function Leads() {
                           ? new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',
-                            }).format(prod.price)
+                            }).format(prod.price * formData.quantity)
                           : formData.oppValue,
                       })
                     }}
@@ -517,6 +514,30 @@ export default function Leads() {
                   </Select>
                 </div>
                 <div>
+                  <label className="text-sm font-medium">Quantidade</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.quantity}
+                    onChange={(e) => {
+                      const qty = parseInt(e.target.value) || 1
+                      const prod = products.find(
+                        (p) => p.id === formData.product_id,
+                      )
+                      setFormData({
+                        ...formData,
+                        quantity: qty,
+                        oppValue: prod
+                          ? new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(prod.price * qty)
+                          : formData.oppValue,
+                      })
+                    }}
+                  />
+                </div>
+                <div>
                   <label className="text-sm font-medium">Valor Estimado</label>
                   <Input
                     type="text"
@@ -537,36 +558,6 @@ export default function Leads() {
                     placeholder="R$ 0,00"
                     disabled={!formData.product_id}
                   />
-                </div>
-                <div className="col-span-2 flex gap-6 mt-2">
-                  <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-[#227b50] focus:ring-[#227b50] w-4 h-4"
-                      checked={formData.investsInMkt}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          investsInMkt: e.target.checked,
-                        })
-                      }
-                    />
-                    Já investe em MKT?
-                  </label>
-                  <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-[#227b50] focus:ring-[#227b50] w-4 h-4"
-                      checked={formData.hasAgency}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          hasAgency: e.target.checked,
-                        })
-                      }
-                    />
-                    Já possui agência?
-                  </label>
                 </div>
               </div>
               <DialogFooter className="mt-6 pt-4 border-t border-gray-100">
@@ -755,9 +746,7 @@ export default function Leads() {
                           {lead.company}
                         </div>
                         {lead.meetings.length > 0 &&
-                        opportunities.some((o) => o.leadId === lead.id) &&
-                        lead.investsInMkt &&
-                        lead.hasAgency ? (
+                        opportunities.some((o) => o.leadId === lead.id) ? (
                           <Badge
                             variant="default"
                             className="bg-orange-500 hover:bg-orange-600 text-[10px] px-1.5 py-0 h-4"
@@ -1362,22 +1351,9 @@ export default function Leads() {
                 </div>
                 <div>
                   <span className="font-semibold text-gray-500 block mb-1">
-                    Marketing & Agência
+                    Quantidade
                   </span>
-                  <div className="flex flex-col gap-1 text-gray-900">
-                    <span>
-                      Investe em Mkt:{' '}
-                      <span className="font-medium">
-                        {viewLead.investsInMkt ? 'Sim' : 'Não'}
-                      </span>
-                    </span>
-                    <span>
-                      Possui Agência:{' '}
-                      <span className="font-medium">
-                        {viewLead.hasAgency ? 'Sim' : 'Não'}
-                      </span>
-                    </span>
-                  </div>
+                  <span className="text-gray-900">{viewLead.quantity}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="font-semibold text-gray-500 block mb-1">
@@ -1482,7 +1458,7 @@ export default function Leads() {
                         ...editLead,
                         product_id: v,
                         estimatedValue: prod
-                          ? prod.price
+                          ? prod.price * (editLead.quantity || 1)
                           : editLead.estimatedValue,
                       })
                     }}
@@ -1525,6 +1501,27 @@ export default function Leads() {
                       )}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="col-span-1">
+                  <label className="text-sm font-medium">Quantidade</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editLead.quantity || 1}
+                    onChange={(e) => {
+                      const qty = parseInt(e.target.value) || 1
+                      const prod = products.find(
+                        (p) => p.id === editLead.product_id,
+                      )
+                      setEditLead({
+                        ...editLead,
+                        quantity: qty,
+                        estimatedValue: prod
+                          ? prod.price * qty
+                          : editLead.estimatedValue,
+                      })
+                    }}
+                  />
                 </div>
                 <div className="col-span-1">
                   <label className="text-sm font-medium">Valor Estimado</label>
@@ -1623,44 +1620,6 @@ export default function Leads() {
                       setEditLead({ ...editLead, objectives: e.target.value })
                     }
                   />
-                </div>
-                <div className="col-span-2 flex gap-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <span className="text-gray-600">Já investe em MKT?</span>
-                    {editLead.investsInMkt ? (
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-700 hover:bg-green-100 shadow-none px-2 py-0 border-0"
-                      >
-                        Sim
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gray-200 text-gray-700 hover:bg-gray-200 shadow-none px-2 py-0 border-0"
-                      >
-                        Não
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <span className="text-gray-600">Já possui agência?</span>
-                    {editLead.hasAgency ? (
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-700 hover:bg-green-100 shadow-none px-2 py-0 border-0"
-                      >
-                        Sim
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gray-200 text-gray-700 hover:bg-gray-200 shadow-none px-2 py-0 border-0"
-                      >
-                        Não
-                      </Badge>
-                    )}
-                  </div>
                 </div>
               </div>
 

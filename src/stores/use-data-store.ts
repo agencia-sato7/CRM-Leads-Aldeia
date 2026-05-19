@@ -50,8 +50,7 @@ export interface Lead {
   createdAt: string
   meetings: Meeting[]
   scheduledMeetingDate?: string
-  investsInMkt: boolean
-  hasAgency: boolean
+  quantity: number
   product_id?: string
   estimatedValue?: number
   cnpj?: string
@@ -326,8 +325,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         objectives: lead.objectives || '',
         notes: lead.notes || '',
         scheduledMeetingDate: lead.scheduled_meeting_date || undefined,
-        investsInMkt: lead.invests_in_mkt || false,
-        hasAgency: lead.has_agency || false,
+        quantity: Number((lead as any).quantity) || 1,
         product_id: (lead as any).product_id || undefined,
         estimatedValue: (lead as any).estimated_value
           ? Number((lead as any).estimated_value)
@@ -503,8 +501,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       objectives: lead.objectives,
       notes: lead.notes,
       scheduled_meeting_date: lead.scheduledMeetingDate || null,
-      invests_in_mkt: lead.investsInMkt,
-      has_agency: lead.hasAgency,
+      quantity: lead.quantity || 1,
       product_id: lead.product_id || null,
       estimated_value: lead.estimatedValue || 0,
       cnpj: lead.cnpj || null,
@@ -590,9 +587,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
     if (data.notes !== undefined) updatePayload.notes = data.notes
     if (data.objectives !== undefined)
       updatePayload.objectives = data.objectives
-    if (data.investsInMkt !== undefined)
-      updatePayload.invests_in_mkt = data.investsInMkt
-    if (data.hasAgency !== undefined) updatePayload.has_agency = data.hasAgency
+    if (data.quantity !== undefined) updatePayload.quantity = data.quantity
     if (data.product_id !== undefined)
       updatePayload.product_id = data.product_id
     if (data.estimatedValue !== undefined)

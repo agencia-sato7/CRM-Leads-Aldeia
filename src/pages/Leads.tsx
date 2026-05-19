@@ -1005,13 +1005,13 @@ export default function Leads() {
                           !lead.userId) &&
                         lead.status !== 'Ganho' ? (
                           <div className="flex flex-col gap-1.5 items-start">
-                            {lead.meetings.length > 0 ? (
+                            {lead.meetings.length > 0 && (
                               <Badge
                                 variant="outline"
-                                className="flex w-max gap-1 items-center shadow-none text-[10px] px-1.5 py-0 bg-[#227b50]/10 text-[#227b50] border-[#227b50]/20"
+                                className="flex w-max gap-1 items-center shadow-none text-[10px] px-1.5 py-0 bg-gray-100 text-gray-700 border-gray-200"
                               >
                                 <CheckCircle2 className="w-3 h-3" />
-                                Visita Concluída em{' '}
+                                Última:{' '}
                                 {format(
                                   new Date(
                                     [...lead.meetings].sort(
@@ -1020,26 +1020,25 @@ export default function Leads() {
                                         new Date(a.date).getTime(),
                                     )[0].date,
                                   ),
-                                  'dd/MM/yy HH:mm',
+                                  'dd/MM/yyyy HH:mm',
                                 )}
                               </Badge>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-[10px] h-7 bg-[#227b50]/5 text-[#227b50] border-[#227b50]/20 hover:bg-[#227b50]/10 px-2"
-                                onClick={() => {
-                                  setScheduleLead(lead)
-                                  setScheduleFormData({
-                                    date: '',
-                                    notes: lead.notes || '',
-                                  })
-                                }}
-                              >
-                                <CalendarDays className="w-3 h-3 mr-1" />
-                                Agendar
-                              </Button>
                             )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-[10px] h-7 bg-[#227b50]/5 text-[#227b50] border-[#227b50]/20 hover:bg-[#227b50]/10 px-2"
+                              onClick={() => {
+                                setScheduleLead(lead)
+                                setScheduleFormData({
+                                  date: '',
+                                  notes: lead.notes || '',
+                                })
+                              }}
+                            >
+                              <CalendarDays className="w-3 h-3 mr-1" />
+                              Agendar
+                            </Button>
                           </div>
                         ) : (
                           <span className="text-gray-400 text-xs">-</span>
@@ -1052,13 +1051,13 @@ export default function Leads() {
                               'flex w-max gap-1 items-center shadow-none text-[10px] px-1.5 py-0',
                               new Date(lead.scheduledMeetingDate) < new Date()
                                 ? 'bg-red-50 text-red-700 border-red-200'
-                                : 'bg-orange-50 text-orange-700 border-orange-200',
+                                : 'bg-[#227b50]/10 text-[#227b50] border-[#227b50]/20',
                             )}
                           >
                             <Clock className="w-3 h-3" />
                             {format(
                               new Date(lead.scheduledMeetingDate),
-                              'dd/MM/yy HH:mm',
+                              'dd/MM/yyyy HH:mm',
                             )}
                           </Badge>
                           <div className="flex items-center gap-1">

@@ -11,17 +11,357 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5'
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          city: string | null
+          company: string
+          contact: string
+          country: string
+          created_at: string
+          email: string | null
+          has_agency: boolean | null
+          id: string
+          invests_in_mkt: boolean | null
+          marketing_status: string | null
+          notes: string | null
+          objectives: string | null
+          origin: string
+          phone: string | null
+          scheduled_meeting_date: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          city?: string | null
+          company: string
+          contact: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          has_agency?: boolean | null
+          id?: string
+          invests_in_mkt?: boolean | null
+          marketing_status?: string | null
+          notes?: string | null
+          objectives?: string | null
+          origin?: string
+          phone?: string | null
+          scheduled_meeting_date?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          city?: string | null
+          company?: string
+          contact?: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          has_agency?: boolean | null
+          id?: string
+          invests_in_mkt?: boolean | null
+          marketing_status?: string | null
+          notes?: string | null
+          objectives?: string | null
+          origin?: string
+          phone?: string | null
+          scheduled_meeting_date?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          lead_id: string | null
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          created_at: string
+          file_url: string | null
+          from_id: string | null
+          id: string
+          read: boolean | null
+          text: string
+          to_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_url?: string | null
+          from_id?: string | null
+          id?: string
+          read?: boolean | null
+          text: string
+          to_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_url?: string | null
+          from_id?: string | null
+          id?: string
+          read?: boolean | null
+          text?: string
+          to_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_from_id_fkey"
+            columns: ["from_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_to_id_fkey"
+            columns: ["to_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunities: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string | null
+          lead_needs: string | null
+          service: string
+          status: string
+          type: string
+          updated_at: string
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          lead_needs?: string | null
+          service: string
+          status?: string
+          type: string
+          updated_at?: string
+          user_id?: string | null
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          lead_needs?: string | null
+          service?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          is_locked: boolean | null
+          name: string
+          phone: string | null
+          role: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id: string
+          is_locked?: boolean | null
+          name: string
+          phone?: string | null
+          role?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          is_locked?: boolean | null
+          name?: string
+          phone?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
+      resources: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          tag: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          tag: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          tag?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          can_create: boolean | null
+          can_delete: boolean | null
+          can_read: boolean | null
+          can_update: boolean | null
+          created_at: string
+          id: string
+          resource: string
+          role_id: string | null
+        }
+        Insert: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_read?: boolean | null
+          can_update?: boolean | null
+          created_at?: string
+          id?: string
+          resource: string
+          role_id?: string | null
+        }
+        Update: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_read?: boolean | null
+          can_update?: boolean | null
+          created_at?: string
+          id?: string
+          resource?: string
+          role_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_create_user: {
+        Args: {
+          new_email: string
+          new_name: string
+          new_password: string
+          new_phone?: string
+          new_role: string
+        }
+        Returns: Json
+      }
+      admin_update_user_credentials: {
+        Args: {
+          new_email?: string
+          new_password?: string
+          user_id_to_update: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -32,33 +372,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
-        DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] &
-        DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -67,23 +407,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -92,23 +432,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -117,36 +457,36 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
@@ -155,6 +495,7 @@ export const Constants = {
   },
 } as const
 
+
 // ====== DATABASE EXTENDED CONTEXT (auto-generated) ======
 // This section contains actual PostgreSQL column types, constraints, RLS policies,
 // functions, triggers, indexes and materialized views not present in the type definitions above.
@@ -162,7 +503,311 @@ export const Constants = {
 // Use the COLUMN TYPES section below to know the real PostgreSQL type for each column.
 // Always use the correct PostgreSQL type when writing SQL migrations.
 
+// --- COLUMN TYPES (actual PostgreSQL types) ---
+// Use this to know the real database type when writing migrations.
+// "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
+// Table: leads
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable)
+//   contact: text (not null)
+//   company: text (not null)
+//   email: text (nullable)
+//   phone: text (nullable)
+//   status: text (not null, default: 'Novo'::text)
+//   country: text (not null, default: 'Brazil'::text)
+//   city: text (nullable)
+//   origin: text (not null, default: 'Site'::text)
+//   marketing_status: text (nullable)
+//   objectives: text (nullable)
+//   notes: text (nullable)
+//   scheduled_meeting_date: timestamp with time zone (nullable)
+//   invests_in_mkt: boolean (nullable, default: false)
+//   has_agency: boolean (nullable, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: meetings
+//   id: uuid (not null, default: gen_random_uuid())
+//   lead_id: uuid (nullable)
+//   date: timestamp with time zone (not null)
+//   notes: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: messages
+//   id: uuid (not null, default: gen_random_uuid())
+//   from_id: uuid (nullable)
+//   to_id: uuid (nullable)
+//   text: text (not null)
+//   file_url: text (nullable)
+//   read: boolean (nullable, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: opportunities
+//   id: uuid (not null, default: gen_random_uuid())
+//   lead_id: uuid (nullable)
+//   user_id: uuid (nullable)
+//   type: text (not null)
+//   service: text (not null)
+//   value: numeric (not null, default: 0)
+//   status: text (not null, default: 'Aberta'::text)
+//   lead_needs: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+// Table: profiles
+//   id: uuid (not null)
+//   email: text (not null)
+//   name: text (not null)
+//   role: text (not null, default: 'COMMERCIAL'::text)
+//   phone: text (nullable)
+//   is_locked: boolean (nullable, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
+//   avatar_url: text (nullable)
+// Table: resources
+//   id: uuid (not null, default: gen_random_uuid())
+//   title: text (not null)
+//   description: text (nullable)
+//   tag: text (not null)
+//   url: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: role_permissions
+//   id: uuid (not null, default: gen_random_uuid())
+//   role_id: uuid (nullable)
+//   resource: text (not null)
+//   can_create: boolean (nullable, default: false)
+//   can_read: boolean (nullable, default: false)
+//   can_update: boolean (nullable, default: false)
+//   can_delete: boolean (nullable, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: roles
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   description: text (nullable)
+//   is_system: boolean (nullable, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
+
+// --- CONSTRAINTS ---
+// Table: leads
+//   PRIMARY KEY leads_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY leads_user_id_fkey: FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+// Table: meetings
+//   FOREIGN KEY meetings_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+//   PRIMARY KEY meetings_pkey: PRIMARY KEY (id)
+// Table: messages
+//   FOREIGN KEY messages_from_id_fkey: FOREIGN KEY (from_id) REFERENCES profiles(id) ON DELETE CASCADE
+//   PRIMARY KEY messages_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY messages_to_id_fkey: FOREIGN KEY (to_id) REFERENCES profiles(id) ON DELETE CASCADE
+// Table: opportunities
+//   FOREIGN KEY opportunities_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+//   PRIMARY KEY opportunities_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY opportunities_user_id_fkey: FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+// Table: profiles
+//   FOREIGN KEY profiles_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+//   PRIMARY KEY profiles_pkey: PRIMARY KEY (id)
+// Table: resources
+//   PRIMARY KEY resources_pkey: PRIMARY KEY (id)
+// Table: role_permissions
+//   PRIMARY KEY role_permissions_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY role_permissions_role_id_fkey: FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+//   UNIQUE role_permissions_role_id_resource_key: UNIQUE (role_id, resource)
+// Table: roles
+//   UNIQUE roles_name_key: UNIQUE (name)
+//   PRIMARY KEY roles_pkey: PRIMARY KEY (id)
+
+// --- ROW LEVEL SECURITY POLICIES ---
+// Table: leads
+//   Policy "leads_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "leads_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))) OR (user_id = auth.uid()))
+//   Policy "leads_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: ((EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))) OR (user_id = auth.uid()))
+// Table: meetings
+//   Policy "meetings_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM leads   WHERE ((leads.id = meetings.lead_id) AND (leads.user_id = auth.uid()))))
+//   Policy "meetings_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM (leads l      LEFT JOIN profiles p ON ((p.id = auth.uid())))   WHERE ((l.id = meetings.lead_id) AND ((p.role = 'ADMIN'::text) OR (l.user_id = auth.uid())))))
+// Table: messages
+//   Policy "messages_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (from_id = auth.uid())
+//   Policy "messages_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((from_id = auth.uid()) OR (to_id = auth.uid()) OR (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))))
+//   Policy "messages_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (to_id = auth.uid())
+// Table: opportunities
+//   Policy "opps_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "opps_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))) OR (user_id = auth.uid()))
+//   Policy "opps_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: ((EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))) OR (user_id = auth.uid()))
+// Table: profiles
+//   Policy "profiles_admin_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles profiles_1   WHERE ((profiles_1.id = auth.uid()) AND (profiles_1.role = 'ADMIN'::text))))
+//   Policy "profiles_admin_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM profiles profiles_1   WHERE ((profiles_1.id = auth.uid()) AND (profiles_1.role = 'ADMIN'::text))))
+//   Policy "profiles_admin_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles profiles_1   WHERE ((profiles_1.id = auth.uid()) AND (profiles_1.role = 'ADMIN'::text))))
+//   Policy "profiles_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "profiles_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (auth.uid() = id)
+// Table: resources
+//   Policy "resources_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+//   Policy "resources_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+//   Policy "resources_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "resources_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+// Table: role_permissions
+//   Policy "role_permissions_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+//   Policy "role_permissions_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+//   Policy "role_permissions_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "role_permissions_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+// Table: roles
+//   Policy "roles_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+//   Policy "roles_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+//   Policy "roles_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "roles_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text))))
+
 // --- DATABASE FUNCTIONS ---
+// FUNCTION admin_create_user(text, text, text, text, text)
+//   CREATE OR REPLACE FUNCTION public.admin_create_user(new_email text, new_password text, new_name text, new_role text, new_phone text DEFAULT NULL::text)
+//    RETURNS jsonb
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//    SET search_path TO 'public', 'auth', 'extensions'
+//   AS $function$
+//   DECLARE
+//     is_admin boolean;
+//     new_user_id uuid;
+//   BEGIN
+//     -- Verifica se o usuário atual é ADMIN
+//     SELECT (role = 'ADMIN') INTO is_admin FROM public.profiles WHERE id = auth.uid();
+//     
+//     IF is_admin IS NULL OR NOT is_admin THEN
+//       RETURN jsonb_build_object('success', false, 'error', 'Acesso negado: apenas administradores podem criar usuários.');
+//     END IF;
+//   
+//     IF EXISTS (SELECT 1 FROM auth.users WHERE email = new_email) THEN
+//       RETURN jsonb_build_object('success', false, 'error', 'E-mail já está em uso.');
+//     END IF;
+//   
+//     new_user_id := gen_random_uuid();
+//   
+//     INSERT INTO auth.users (
+//       id, instance_id, email, encrypted_password, email_confirmed_at,
+//       created_at, updated_at, raw_app_meta_data, raw_user_meta_data,
+//       is_super_admin, role, aud,
+//       confirmation_token, recovery_token, email_change_token_new,
+//       email_change, email_change_token_current,
+//       phone, phone_change, phone_change_token, reauthentication_token
+//     ) VALUES (
+//       new_user_id,
+//       '00000000-0000-0000-0000-000000000000',
+//       new_email,
+//       extensions.crypt(new_password, extensions.gen_salt('bf')),
+//       now(), now(), now(),
+//       '{"provider": "email", "providers": ["email"]}',
+//       jsonb_build_object('name', new_name, 'role', new_role),
+//       false, 'authenticated', 'authenticated',
+//       '', '', '', '', '',
+//       NULL, '', '', ''
+//     );
+//   
+//     -- Atualiza o perfil criado pela trigger para incluir telefone se fornecido
+//     IF new_phone IS NOT NULL AND new_phone <> '' THEN
+//       UPDATE public.profiles SET phone = new_phone WHERE id = new_user_id;
+//     END IF;
+//   
+//     RETURN jsonb_build_object('success', true, 'user_id', new_user_id);
+//   END;
+//   $function$
+//   
+// FUNCTION admin_update_user_credentials(uuid, text, text)
+//   CREATE OR REPLACE FUNCTION public.admin_update_user_credentials(user_id_to_update uuid, new_email text DEFAULT NULL::text, new_password text DEFAULT NULL::text)
+//    RETURNS jsonb
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//    SET search_path TO 'public', 'auth', 'extensions'
+//   AS $function$
+//   DECLARE
+//     is_admin boolean;
+//   BEGIN
+//     -- Verifica se o usuário atual é ADMIN
+//     SELECT (role = 'ADMIN') INTO is_admin FROM public.profiles WHERE id = auth.uid();
+//     
+//     IF is_admin IS NULL OR NOT is_admin THEN
+//       RETURN jsonb_build_object('success', false, 'error', 'Acesso negado: apenas administradores podem alterar credenciais.');
+//     END IF;
+//   
+//     -- Atualiza o e-mail, se fornecido
+//     IF new_email IS NOT NULL AND new_email <> '' THEN
+//       IF EXISTS (SELECT 1 FROM auth.users WHERE email = new_email AND id <> user_id_to_update) THEN
+//         RETURN jsonb_build_object('success', false, 'error', 'E-mail já está em uso por outro usuário.');
+//       END IF;
+//       
+//       UPDATE auth.users 
+//       SET email = new_email, email_confirmed_at = COALESCE(email_confirmed_at, now()), updated_at = now()
+//       WHERE id = user_id_to_update;
+//       
+//       UPDATE public.profiles 
+//       SET email = new_email 
+//       WHERE id = user_id_to_update;
+//     END IF;
+//   
+//     -- Atualiza a senha, se fornecida
+//     IF new_password IS NOT NULL AND new_password <> '' THEN
+//       UPDATE auth.users 
+//       SET encrypted_password = extensions.crypt(new_password, extensions.gen_salt('bf')), updated_at = now()
+//       WHERE id = user_id_to_update;
+//     END IF;
+//   
+//     RETURN jsonb_build_object('success', true);
+//   END;
+//   $function$
+//   
+// FUNCTION handle_lead_status_change()
+//   CREATE OR REPLACE FUNCTION public.handle_lead_status_change()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     -- Cria uma oportunidade automaticamente se o lead for movido para "Em Negociação"
+//     IF NEW.status = 'Em Negociação' AND (TG_OP = 'INSERT' OR OLD.status != 'Em Negociação') THEN
+//       IF NOT EXISTS (SELECT 1 FROM public.opportunities WHERE lead_id = NEW.id) THEN
+//         INSERT INTO public.opportunities (lead_id, user_id, type, service, value, status)
+//         VALUES (NEW.id, NEW.user_id, 'Fee Mensal', 'Não especificado', 0, 'Aberta');
+//       END IF;
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//   
+// FUNCTION handle_new_user()
+//   CREATE OR REPLACE FUNCTION public.handle_new_user()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     INSERT INTO public.profiles (id, email, name, role)
+//     VALUES (
+//       NEW.id,
+//       NEW.email,
+//       COALESCE(NEW.raw_user_meta_data->>'name', 'Usuário'),
+//       COALESCE(NEW.raw_user_meta_data->>'role', 'COMMERCIAL')
+//     ) ON CONFLICT (id) DO NOTHING;
+//     RETURN NEW;
+//   END;
+//   $function$
+//   
 // FUNCTION rls_auto_enable()
 //   CREATE OR REPLACE FUNCTION public.rls_auto_enable()
 //    RETURNS event_trigger
@@ -193,4 +838,15 @@ export const Constants = {
 //     END LOOP;
 //   END;
 //   $function$
-//
+//   
+
+// --- TRIGGERS ---
+// Table: leads
+//   on_lead_status_change: CREATE TRIGGER on_lead_status_change AFTER INSERT OR UPDATE OF status ON public.leads FOR EACH ROW EXECUTE FUNCTION handle_lead_status_change()
+
+// --- INDEXES ---
+// Table: role_permissions
+//   CREATE UNIQUE INDEX role_permissions_role_id_resource_key ON public.role_permissions USING btree (role_id, resource)
+// Table: roles
+//   CREATE UNIQUE INDEX roles_name_key ON public.roles USING btree (name)
+

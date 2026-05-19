@@ -1,6 +1,5 @@
 {
   "_versions": {
-    "send-2fa-email": 3,
     "send-onboarding-email": 3,
     "send-recovery-email": 3
   }

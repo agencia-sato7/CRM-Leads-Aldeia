@@ -41,7 +41,6 @@ export function HighTicketLeads({ region, userId, startDate, endDate }: any) {
           topOpps.map((opp) => {
             const lead = leads.find((l) => l.id === opp.leadId)
             if (!lead) return null
-            const isUSA = lead.country === 'USA'
             return (
               <div
                 key={opp.id}
@@ -62,10 +61,9 @@ export function HighTicketLeads({ region, userId, startDate, endDate }: any) {
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-gray-900 text-base">
-                    {new Intl.NumberFormat(isUSA ? 'en-US' : 'pt-BR', {
+                    {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
-                      currency: isUSA ? 'USD' : 'BRL',
-                      maximumFractionDigits: 0,
+                      currency: 'BRL',
                     }).format(opp.value)}
                   </div>
                   <Badge

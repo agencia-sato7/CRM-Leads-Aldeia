@@ -146,10 +146,10 @@ export default function Opportunities() {
     lastProcessedLeadId.current = ''
   }
 
-  const formatCurrency = (val: number, isUSA: boolean) =>
-    new Intl.NumberFormat(isUSA ? 'en-US' : 'pt-BR', {
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: isUSA ? 'USD' : 'BRL',
+      currency: 'BRL',
     }).format(val)
 
   return (
@@ -491,7 +491,7 @@ export default function Opportunities() {
                       {users.find((u) => u.id === opp.userId)?.name || '-'}
                     </TableCell>
                     <TableCell className="font-bold text-gray-900 text-right text-base">
-                      {formatCurrency(opp.value, lead.country === 'USA')}
+                      {formatCurrency(opp.value)}
                     </TableCell>
                     <TableCell className="text-center">
                       <div

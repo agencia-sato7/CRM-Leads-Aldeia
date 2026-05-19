@@ -34,29 +34,23 @@ export function Metrics({
   const wonOpps = relevantOpps.filter((o) => o.status === 'Ganha')
   const lostOpps = relevantOpps.filter((o) => o.status === 'Perdida')
 
-  const valBRL = wonOpps
-    .filter((o) => leads.find((l) => l.id === o.leadId)?.country === 'Brazil')
-    .reduce((acc, o) => acc + o.value, 0)
-  const valUSD = wonOpps
-    .filter((o) => leads.find((l) => l.id === o.leadId)?.country === 'USA')
-    .reduce((acc, o) => acc + o.value, 0)
+  const wonVal = wonOpps.reduce((acc, o) => acc + o.value, 0)
   const lostVal = lostOpps.reduce((acc, o) => acc + o.value, 0)
   const totalMeetings = relevantLeads.reduce(
     (acc, l) => acc + l.meetings.length,
     0,
   )
 
-  const formatValue = (v: number, c: string) =>
-    new Intl.NumberFormat(c === 'USD' ? 'en-US' : 'pt-BR', {
+  const formatValue = (v: number) =>
+    new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: c,
-      maximumFractionDigits: 0,
+      currency: 'BRL',
     }).format(v)
 
   const cards = [
     {
       title: 'Valor Fechado',
-      value: `${formatValue(valBRL, 'BRL')} / ${formatValue(valUSD, 'USD')}`,
+      value: formatValue(wonVal),
       icon: DollarSign,
       color: 'text-emerald-600',
       bg: 'bg-emerald-100',
@@ -80,7 +74,7 @@ export function Metrics({
     },
     {
       title: 'Budget Perdido (Aprox.)',
-      value: formatValue(lostVal, 'BRL'),
+      value: formatValue(lostVal),
       icon: ArrowDownRight,
       color: 'text-red-600',
       bg: 'bg-red-100',

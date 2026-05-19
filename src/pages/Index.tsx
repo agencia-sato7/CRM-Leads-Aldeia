@@ -145,8 +145,8 @@ export default function Index() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as Regiões</SelectItem>
-                <SelectItem value="Brazil">Brasil (BRL)</SelectItem>
-                <SelectItem value="USA">Internacional (USD)</SelectItem>
+                <SelectItem value="Brazil">Brasil</SelectItem>
+                <SelectItem value="USA">Internacional</SelectItem>
               </SelectContent>
             </Select>
           </div>

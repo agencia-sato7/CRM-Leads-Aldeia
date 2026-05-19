@@ -453,7 +453,7 @@ export default function Leads() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Brazil">Brasil</SelectItem>
-                      <SelectItem value="USA">USA</SelectItem>
+                      <SelectItem value="USA">Internacional</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -623,7 +623,7 @@ export default function Leads() {
             <SelectContent>
               <SelectItem value="all">Todas as Regiões</SelectItem>
               <SelectItem value="Brazil">Brasil</SelectItem>
-              <SelectItem value="USA">USA</SelectItem>
+              <SelectItem value="USA">Internacional</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterOrigin} onValueChange={setFilterOrigin}>
@@ -1343,14 +1343,10 @@ export default function Leads() {
                   </span>
                   <span className="text-gray-900">
                     {viewLead.estimatedValue
-                      ? new Intl.NumberFormat(
-                          viewLead.country === 'USA' ? 'en-US' : 'pt-BR',
-                          {
-                            style: 'currency',
-                            currency:
-                              viewLead.country === 'USA' ? 'USD' : 'BRL',
-                          },
-                        ).format(viewLead.estimatedValue)
+                      ? new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(viewLead.estimatedValue)
                       : '-'}
                   </span>
                 </div>

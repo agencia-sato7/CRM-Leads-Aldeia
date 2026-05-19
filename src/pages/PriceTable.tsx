@@ -354,12 +354,18 @@ export default function PriceTable() {
                       <TableCell className="text-right font-bold text-gray-900 py-4">
                         {s.baseValue === 0
                           ? 'Sob Consulta'
-                          : `R$ ${s.baseValue.toLocaleString('pt-BR')}`}
+                          : new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(s.baseValue)}
                       </TableCell>
                       <TableCell className="text-right font-bold text-gray-500 py-4">
                         {s.ceilingValue === 0 || s.ceilingValue >= 100000
                           ? 'R$ ∞'
-                          : `R$ ${s.ceilingValue.toLocaleString('pt-BR')}`}
+                          : new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(s.ceilingValue)}
                       </TableCell>
                       <TableCell className="text-right py-4 space-x-1">
                         {perms.can_update && (
@@ -485,6 +491,7 @@ export default function PriceTable() {
                 <Label>Valor Base (R$)</Label>
                 <Input
                   type="number"
+                  step="0.01"
                   value={svcForm.baseValue || ''}
                   onChange={(e) =>
                     setSvcForm({
@@ -498,6 +505,7 @@ export default function PriceTable() {
                 <Label>Valor Teto (R$)</Label>
                 <Input
                   type="number"
+                  step="0.01"
                   value={svcForm.ceilingValue || ''}
                   onChange={(e) =>
                     setSvcForm({

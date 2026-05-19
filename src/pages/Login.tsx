@@ -9,31 +9,23 @@ export default function Login() {
   const [email, setEmail] = useState('diretor@sato7.com.br')
   const [password, setPassword] = useState('Skip@Pass')
   const [error, setError] = useState('')
-  const { signIn, session, is2FAVerified } = useAuth()
+  const { signIn, session } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (session) {
-      if (is2FAVerified) {
-        navigate('/', { replace: true })
-      } else {
-        navigate('/2fa', { replace: true })
-      }
+      navigate('/', { replace: true })
     }
-  }, [session, is2FAVerified, navigate])
+  }, [session, navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    const { error: signInError, requires2FA } = await signIn(email, password)
+    const { error: signInError } = await signIn(email, password)
     if (signInError) {
       setError('Credenciais inválidas.')
     } else {
-      if (requires2FA) {
-        navigate('/2fa', { replace: true })
-      } else {
-        navigate('/', { replace: true })
-      }
+      navigate('/', { replace: true })
     }
   }
 

@@ -25,14 +25,13 @@ import { RequirePermission } from './components/RequirePermission'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
-import TwoFactorAuth from './pages/TwoFactorAuth'
 import { useDataStore } from './stores/use-data-store'
 import { AuthProvider, useAuth } from './hooks/use-auth'
 import { useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
-  const { session, loading, is2FAVerified } = useAuth()
+  const { session, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -44,8 +43,6 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   }
   if (!session)
     return <Navigate to="/login" state={{ from: location }} replace />
-  if (!is2FAVerified)
-    return <Navigate to="/2fa" state={{ from: location }} replace />
 
   return <>{children}</>
 }
@@ -76,7 +73,6 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/2fa" element={<TwoFactorAuth />} />
 
             <Route
               element={

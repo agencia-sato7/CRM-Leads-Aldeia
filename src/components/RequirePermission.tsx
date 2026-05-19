@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { useDataStore } from '@/stores/use-data-store'
-import { useAuth } from '@/hooks/use-auth'
 import { Loader2 } from 'lucide-react'
 
 export function RequirePermission({
@@ -13,7 +12,6 @@ export function RequirePermission({
   resource: string
 }) {
   const { currentUser } = useDataStore()
-  const { is2FAVerified } = useAuth()
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -59,10 +57,6 @@ export function RequirePermission({
 
     checkPermission()
   }, [currentUser, resource])
-
-  if (!is2FAVerified) {
-    return null
-  }
 
   if (!currentUser || hasPermission === null) {
     return (

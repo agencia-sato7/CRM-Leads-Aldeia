@@ -37,7 +37,7 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-down">
-        <div className="flex justify-center text-red-600">
+        <div className="flex justify-center text-[#227b50]">
           <ShieldCheck className="w-12 h-12" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -58,7 +58,7 @@ export default function ForgotPassword() {
               </p>
               <Link
                 to="/login"
-                className="text-red-600 font-medium text-sm hover:underline block"
+                className="text-[#227b50] font-medium text-sm hover:underline block"
               >
                 Voltar para o Login
               </Link>
@@ -84,7 +84,7 @@ export default function ForgotPassword() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 text-base bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md transition-all"
+                  className="w-full h-11 text-base bg-[#227b50] hover:bg-[#185e3c] text-white rounded-xl shadow-md transition-all"
                 >
                   {loading ? 'Enviando...' : 'Enviar Link de Recuperação'}
                 </Button>

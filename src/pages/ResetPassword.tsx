@@ -36,7 +36,7 @@ export default function ResetPassword() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#227b50]"></div>
       </div>
     )
   }
@@ -44,7 +44,7 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-down">
-        <div className="flex justify-center text-red-600">
+        <div className="flex justify-center text-[#227b50]">
           <ShieldCheck className="w-12 h-12" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -67,7 +67,7 @@ export default function ResetPassword() {
               </p>
               <Button
                 onClick={() => navigate('/forgot-password')}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                className="w-full bg-[#227b50] hover:bg-[#185e3c] text-white"
               >
                 Solicitar novo link
               </Button>
@@ -95,7 +95,7 @@ export default function ResetPassword() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 text-base bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md transition-all"
+                  className="w-full h-11 text-base bg-[#227b50] hover:bg-[#185e3c] text-white rounded-xl shadow-md transition-all"
                 >
                   {loading ? 'Atualizando...' : 'Atualizar Senha'}
                 </Button>

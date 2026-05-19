@@ -83,8 +83,8 @@ export default function Leads() {
     addOpportunity,
     currentUser,
     opportunities,
-    services,
-    categories,
+    products,
+    productCategories,
     users,
   } = useDataStore()
   const [isOpen, setIsOpen] = useState(false)
@@ -93,7 +93,7 @@ export default function Leads() {
   const [filterRegion, setFilterRegion] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterOrigin, setFilterOrigin] = useState<string>('all')
-  const [filterService, setFilterService] = useState<string>('all')
+  const [filterProduct, setFilterProduct] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [newMeetingDate, setNewMeetingDate] = useState('')
   const [newMeetingNotes, setNewMeetingNotes] = useState('')
@@ -102,14 +102,14 @@ export default function Leads() {
     filterRegion !== 'all' ||
     filterStatus !== 'all' ||
     filterOrigin !== 'all' ||
-    filterService !== 'all' ||
+    filterProduct !== 'all' ||
     searchTerm !== ''
 
   const clearFilters = () => {
     setFilterRegion('all')
     setFilterStatus('all')
     setFilterOrigin('all')
-    setFilterService('all')
+    setFilterProduct('all')
     setSearchTerm('')
   }
 
@@ -174,7 +174,7 @@ export default function Leads() {
     notes: '',
     investsInMkt: false,
     hasAgency: false,
-    service_id: '',
+    product_id: '',
   })
 
   if (!currentUser) return null
@@ -183,15 +183,15 @@ export default function Leads() {
     const matchRegion = filterRegion === 'all' || l.country === filterRegion
     const matchStatus = filterStatus === 'all' || l.status === filterStatus
     const matchOrigin = filterOrigin === 'all' || l.origin === filterOrigin
-    const matchService =
-      filterService === 'all' || l.service_id === filterService
+    const matchProduct =
+      filterProduct === 'all' || l.product_id === filterProduct
     const matchSearch =
       searchTerm === '' ||
       l.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       l.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
       l.email.toLowerCase().includes(searchTerm.toLowerCase())
     return (
-      matchRegion && matchStatus && matchOrigin && matchService && matchSearch
+      matchRegion && matchStatus && matchOrigin && matchProduct && matchSearch
     )
   })
 
@@ -222,8 +222,8 @@ export default function Leads() {
       hasAgency: formData.hasAgency,
     } as any
 
-    if (formData.service_id) {
-      payload.service_id = formData.service_id
+    if (formData.product_id) {
+      payload.product_id = formData.product_id
     }
 
     payload.estimatedValue = formData.oppValue ? Number(formData.oppValue) : 0
@@ -248,7 +248,7 @@ export default function Leads() {
       notes: '',
       investsInMkt: false,
       hasAgency: false,
-      service_id: '',
+      product_id: '',
     })
   }
 
@@ -481,53 +481,53 @@ export default function Leads() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">
-                    Serviço de Interesse
+                    Produto de Interesse
                   </label>
                   <Select
-                    value={formData.service_id || undefined}
+                    value={formData.product_id || undefined}
                     onValueChange={(v) => {
-                      const svc = services.find((s) => s.id === v)
+                      const prod = products.find((p) => p.id === v)
                       setFormData({
                         ...formData,
-                        service_id: v,
-                        oppValue: svc
-                          ? svc.baseValue.toString()
+                        product_id: v,
+                        oppValue: prod
+                          ? prod.price.toString()
                           : formData.oppValue,
                       })
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um serviço" />
+                      <SelectValue placeholder="Selecione um produto" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => {
-                        const catServices = services.filter(
-                          (s) => s.categoryId === cat.id,
+                      {productCategories.map((cat) => {
+                        const catProducts = products.filter(
+                          (p) => p.categoryId === cat.id,
                         )
-                        if (catServices.length === 0) return null
+                        if (catProducts.length === 0) return null
                         return (
                           <SelectGroup key={cat.id}>
                             <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
                               {cat.name}
                             </SelectLabel>
-                            {catServices.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.name}
+                            {catProducts.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
                               </SelectItem>
                             ))}
                           </SelectGroup>
                         )
                       })}
-                      {services.filter((s) => !s.categoryId).length > 0 && (
+                      {products.filter((p) => !p.categoryId).length > 0 && (
                         <SelectGroup>
                           <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
                             Outros
                           </SelectLabel>
-                          {services
-                            .filter((s) => !s.categoryId)
-                            .map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.name}
+                          {products
+                            .filter((p) => !p.categoryId)
+                            .map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
                               </SelectItem>
                             ))}
                         </SelectGroup>
@@ -546,40 +546,8 @@ export default function Leads() {
                       setFormData({ ...formData, oppValue: e.target.value })
                     }
                     placeholder="0.00"
-                    disabled={!formData.service_id}
-                    min={
-                      services.find((s) => s.id === formData.service_id)
-                        ?.baseValue
-                    }
-                    max={
-                      services.find((s) => s.id === formData.service_id)
-                        ?.ceilingValue
-                    }
+                    disabled={!formData.product_id}
                   />
-                  {(() => {
-                    if (!formData.service_id || formData.oppValue === '')
-                      return null
-                    const svc = services.find(
-                      (s) => s.id === formData.service_id,
-                    )
-                    if (!svc) return null
-                    const val = Number(formData.oppValue)
-                    if (val < svc.baseValue) {
-                      return (
-                        <div className="text-red-500 text-xs mt-1">
-                          Você atingiu o limite min de {svc.baseValue}
-                        </div>
-                      )
-                    }
-                    if (val > svc.ceilingValue) {
-                      return (
-                        <div className="text-red-500 text-xs mt-1">
-                          Você atingiu o limite máximo de {svc.ceilingValue}
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
                 </div>
                 <div className="col-span-2 flex gap-6 mt-2">
                   <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
@@ -616,23 +584,14 @@ export default function Leads() {
                 <Button
                   type="submit"
                   className="bg-[#227b50] hover:bg-[#1a5c3c] text-white w-full"
-                  disabled={(() => {
-                    if (
-                      !formData.company.trim() ||
-                      !formData.contact.trim() ||
-                      !formData.email.trim() ||
-                      !formData.phone.trim() ||
-                      !formData.service_id ||
-                      formData.oppValue === ''
-                    )
-                      return true
-                    const svc = services.find(
-                      (s) => s.id === formData.service_id,
-                    )
-                    if (!svc) return true
-                    const val = Number(formData.oppValue)
-                    return val < svc.baseValue || val > svc.ceilingValue
-                  })()}
+                  disabled={
+                    !formData.company.trim() ||
+                    !formData.contact.trim() ||
+                    !formData.email.trim() ||
+                    !formData.phone.trim() ||
+                    !formData.product_id ||
+                    formData.oppValue === ''
+                  }
                 >
                   Salvar Lead
                 </Button>
@@ -694,41 +653,41 @@ export default function Leads() {
               <SelectItem value="Manual">Manual</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterService} onValueChange={setFilterService}>
+          <Select value={filterProduct} onValueChange={setFilterProduct}>
             <SelectTrigger className="w-[200px]">
               <Filter className="w-3.5 h-3.5 mr-2" />
-              <SelectValue placeholder="Serviço/Categoria" />
+              <SelectValue placeholder="Produto/Categoria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os Serviços</SelectItem>
-              {categories.map((cat) => {
-                const catServices = services.filter(
-                  (s) => s.categoryId === cat.id,
+              <SelectItem value="all">Todos os Produtos</SelectItem>
+              {productCategories.map((cat) => {
+                const catProducts = products.filter(
+                  (p) => p.categoryId === cat.id,
                 )
-                if (catServices.length === 0) return null
+                if (catProducts.length === 0) return null
                 return (
                   <SelectGroup key={cat.id}>
                     <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
                       {cat.name}
                     </SelectLabel>
-                    {catServices.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
+                    {catProducts.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
                       </SelectItem>
                     ))}
                   </SelectGroup>
                 )
               })}
-              {services.filter((s) => !s.categoryId).length > 0 && (
+              {products.filter((p) => !p.categoryId).length > 0 && (
                 <SelectGroup>
                   <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
                     Outros
                   </SelectLabel>
-                  {services
-                    .filter((s) => !s.categoryId)
-                    .map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
+                  {products
+                    .filter((p) => !p.categoryId)
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
                       </SelectItem>
                     ))}
                 </SelectGroup>
@@ -776,7 +735,7 @@ export default function Leads() {
                   <TableHead>Empresa / Cliente</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Origem</TableHead>
-                  <TableHead>Objetivo Principal / Serviços</TableHead>
+                  <TableHead>Objetivo Principal / Produtos</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1.5">
                       Status
@@ -851,22 +810,22 @@ export default function Leads() {
                     </TableCell>
                     <TableCell className="max-w-[150px] text-sm text-gray-600">
                       <div className="flex flex-col gap-1 items-start">
-                        {lead.service_id &&
-                          services.find((s) => s.id === lead.service_id) && (
+                        {lead.product_id &&
+                          products.find((p) => p.id === lead.product_id) && (
                             <Badge
                               variant="outline"
                               className="bg-gray-50 text-gray-600 font-normal"
                             >
                               {(() => {
-                                const svc = services.find(
-                                  (s) => s.id === lead.service_id,
+                                const prod = products.find(
+                                  (p) => p.id === lead.product_id,
                                 )
-                                const cat = categories.find(
-                                  (c) => c.id === svc?.categoryId,
+                                const cat = productCategories.find(
+                                  (c) => c.id === prod?.categoryId,
                                 )
                                 return cat
-                                  ? `${svc?.name} / ${cat.name}`
-                                  : svc?.name
+                                  ? `${prod?.name} / ${cat.name}`
+                                  : prod?.name
                               })()}
                             </Badge>
                           )}
@@ -1379,10 +1338,10 @@ export default function Leads() {
                 </div>
                 <div>
                   <span className="font-semibold text-gray-500 block mb-1">
-                    Serviço de Interesse
+                    Produto de Interesse
                   </span>
                   <span className="text-gray-900">
-                    {services.find((s) => s.id === viewLead.service_id)?.name ||
+                    {products.find((p) => p.id === viewLead.product_id)?.name ||
                       '-'}
                   </span>
                 </div>
@@ -1529,54 +1488,54 @@ export default function Leads() {
                 </div>
                 <div className="col-span-1">
                   <label className="text-sm font-medium">
-                    Serviço de Interesse
+                    Produto de Interesse
                   </label>
                   <Select
-                    value={editLead.service_id || undefined}
+                    value={editLead.product_id || undefined}
                     disabled
                     onValueChange={(v) => {
-                      const svc = services.find((s) => s.id === v)
+                      const prod = products.find((p) => p.id === v)
                       setEditLead({
                         ...editLead,
-                        service_id: v,
-                        estimatedValue: svc
-                          ? svc.baseValue
+                        product_id: v,
+                        estimatedValue: prod
+                          ? prod.price
                           : editLead.estimatedValue,
                       })
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um serviço" />
+                      <SelectValue placeholder="Selecione um produto" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => {
-                        const catServices = services.filter(
-                          (s) => s.categoryId === cat.id,
+                      {productCategories.map((cat) => {
+                        const catProducts = products.filter(
+                          (p) => p.categoryId === cat.id,
                         )
-                        if (catServices.length === 0) return null
+                        if (catProducts.length === 0) return null
                         return (
                           <SelectGroup key={cat.id}>
                             <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
                               {cat.name}
                             </SelectLabel>
-                            {catServices.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.name}
+                            {catProducts.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
                               </SelectItem>
                             ))}
                           </SelectGroup>
                         )
                       })}
-                      {services.filter((s) => !s.categoryId).length > 0 && (
+                      {products.filter((p) => !p.categoryId).length > 0 && (
                         <SelectGroup>
                           <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
                             Outros
                           </SelectLabel>
-                          {services
-                            .filter((s) => !s.categoryId)
-                            .map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.name}
+                          {products
+                            .filter((p) => !p.categoryId)
+                            .map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
                               </SelectItem>
                             ))}
                         </SelectGroup>
@@ -1598,44 +1557,8 @@ export default function Leads() {
                       })
                     }
                     placeholder="0.00"
-                    disabled={!editLead.service_id}
-                    min={
-                      services.find((s) => s.id === editLead.service_id)
-                        ?.baseValue
-                    }
-                    max={
-                      services.find((s) => s.id === editLead.service_id)
-                        ?.ceilingValue
-                    }
+                    disabled={!editLead.product_id}
                   />
-                  {(() => {
-                    if (
-                      !editLead.service_id ||
-                      editLead.estimatedValue === null ||
-                      editLead.estimatedValue === undefined
-                    )
-                      return null
-                    const svc = services.find(
-                      (s) => s.id === editLead.service_id,
-                    )
-                    if (!svc) return null
-                    const val = editLead.estimatedValue
-                    if (val < svc.baseValue) {
-                      return (
-                        <div className="text-red-500 text-xs mt-1">
-                          Você atingiu o limite min de {svc.baseValue}
-                        </div>
-                      )
-                    }
-                    if (val > svc.ceilingValue) {
-                      return (
-                        <div className="text-red-500 text-xs mt-1">
-                          Você atingiu o limite máximo de {svc.ceilingValue}
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
                 </div>
                 <div>
                   <label className="text-sm font-medium">E-mail</label>
@@ -1825,21 +1748,14 @@ export default function Leads() {
                   setEditLead(null)
                 }}
                 className="w-full bg-[#227b50] hover:bg-[#1a5c3c] text-white"
-                disabled={(() => {
-                  if (
-                    !editLead.company.trim() ||
-                    !editLead.email.trim() ||
-                    !editLead.phone.trim() ||
-                    !editLead.service_id ||
-                    editLead.estimatedValue === null ||
-                    editLead.estimatedValue === undefined
-                  )
-                    return true
-                  const svc = services.find((s) => s.id === editLead.service_id)
-                  if (!svc) return true
-                  const val = editLead.estimatedValue
-                  return val < svc.baseValue || val > svc.ceilingValue
-                })()}
+                disabled={
+                  !editLead.company.trim() ||
+                  !editLead.email.trim() ||
+                  !editLead.phone.trim() ||
+                  !editLead.product_id ||
+                  editLead.estimatedValue === null ||
+                  editLead.estimatedValue === undefined
+                }
               >
                 Salvar Alterações Gerais
               </Button>

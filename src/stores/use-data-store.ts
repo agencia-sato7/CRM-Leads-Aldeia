@@ -52,7 +52,7 @@ export interface Lead {
   scheduledMeetingDate?: string
   investsInMkt: boolean
   hasAgency: boolean
-  service_id?: string
+  product_id?: string
   estimatedValue?: number
 }
 
@@ -330,7 +330,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         scheduledMeetingDate: lead.scheduled_meeting_date || undefined,
         investsInMkt: lead.invests_in_mkt || false,
         hasAgency: lead.has_agency || false,
-        service_id: lead.service_id || undefined,
+        product_id: (lead as any).product_id || undefined,
         estimatedValue: (lead as any).estimated_value
           ? Number((lead as any).estimated_value)
           : undefined,
@@ -509,7 +509,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       scheduled_meeting_date: lead.scheduledMeetingDate || null,
       invests_in_mkt: lead.investsInMkt,
       has_agency: lead.hasAgency,
-      service_id: lead.service_id || null,
+      product_id: lead.product_id || null,
       estimated_value: lead.estimatedValue || 0,
     } as any
 
@@ -524,7 +524,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         ...lead,
         id: data.id,
         createdAt: data.created_at,
-        service_id: data.service_id || undefined,
+        product_id: (data as any).product_id || undefined,
         meetings: [],
       }
       set((state) => ({ leads: [newLead, ...state.leads] }))
@@ -588,8 +588,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
     if (data.investsInMkt !== undefined)
       updatePayload.invests_in_mkt = data.investsInMkt
     if (data.hasAgency !== undefined) updatePayload.has_agency = data.hasAgency
-    if (data.service_id !== undefined)
-      updatePayload.service_id = data.service_id
+    if (data.product_id !== undefined)
+      updatePayload.product_id = data.product_id
     if (data.estimatedValue !== undefined)
       updatePayload.estimated_value = data.estimatedValue
 
@@ -613,19 +613,19 @@ export const useDataStore = create<DataStore>((set, get) => ({
       await supabase.from('leads').update(updatePayload).eq('id', id)
     }
 
-    if (data.estimatedValue !== undefined || data.service_id !== undefined) {
+    if (data.estimatedValue !== undefined || data.product_id !== undefined) {
       const existingOpp = get().opportunities.find((o) => o.leadId === id)
       if (existingOpp) {
         const oppUpdate: any = {}
         if (data.estimatedValue !== undefined)
           oppUpdate.value = data.estimatedValue
-        if (data.service_id !== undefined) {
-          const { data: svc } = await supabase
-            .from('services')
+        if (data.product_id !== undefined) {
+          const { data: prod } = await supabase
+            .from('products')
             .select('name')
-            .eq('id', data.service_id)
+            .eq('id', data.product_id)
             .single()
-          if (svc) oppUpdate.service = svc.name
+          if (prod) oppUpdate.service = prod.name
         }
         if (Object.keys(oppUpdate).length > 0) {
           await supabase

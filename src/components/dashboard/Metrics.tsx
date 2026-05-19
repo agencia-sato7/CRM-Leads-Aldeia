@@ -43,11 +43,48 @@ export function Metrics({
 
   const formatValue = (v: number) =>
     new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(v)
 
+  const openOpps = relevantOpps.filter(
+    (o) => o.status === 'Aberta' || o.status === 'Em Negociação',
+  )
+  const openValBRL = openOpps.reduce((acc, o) => acc + o.value, 0)
+
+  const openLeadsUSD = relevantLeads.filter(
+    (l) =>
+      l.country !== 'Brazil' && l.status !== 'Perdida' && l.status !== 'Ganha',
+  )
+  const openValUSD = openLeadsUSD.reduce(
+    (acc, l) => acc + (l.estimated_value || 0),
+    0,
+  )
+
   const cards = [
+    {
+      title: 'Orçamentos Abertos (Real BRL)',
+      value: formatValue(openValBRL),
+      icon: Wallet,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-100',
+      trend: 'Pipeline em aberto',
+    },
+    {
+      title: 'Orçamentos Abertos (Dólar USD)',
+      value: new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(openValUSD),
+      icon: Wallet,
+      color: 'text-blue-600',
+      bg: 'bg-blue-100',
+      trend: 'Pipeline internacional',
+    },
     {
       title: 'Orçamentos Fechados',
       value: formatValue(wonVal),

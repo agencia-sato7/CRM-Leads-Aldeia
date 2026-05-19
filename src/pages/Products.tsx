@@ -7,6 +7,7 @@ import {
   Trash2,
   Tags,
   Building2,
+  FolderOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,33 +33,40 @@ export default function Products() {
   const {
     products,
     brands,
+    productCategories,
     addProduct,
     updateProduct,
     deleteProduct,
     addBrand,
     deleteBrand,
+    addProductCategory,
+    deleteProductCategory,
   } = useDataStore()
   const { toast } = useToast()
 
   const [search, setSearch] = useState('')
   const [filterBrand, setFilterBrand] = useState('all')
+  const [filterCategory, setFilterCategory] = useState('all')
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false)
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
 
   const [productForm, setProductForm] = useState({
     name: '',
     brandId: '',
+    categoryId: 'none',
     searchTerms: '',
   })
 
   const [brandName, setBrandName] = useState('')
+  const [categoryName, setCategoryName] = useState('')
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
     id: string
-    type: 'product' | 'brand'
+    type: 'product' | 'brand' | 'category'
   } | null>(null)
 
   const filteredProducts = useMemo(() => {
@@ -67,9 +75,11 @@ export default function Products() {
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.searchTerms.toLowerCase().includes(search.toLowerCase())
       const matchBrand = filterBrand === 'all' || p.brandId === filterBrand
-      return matchSearch && matchBrand
+      const matchCategory =
+        filterCategory === 'all' || p.categoryId === filterCategory
+      return matchSearch && matchBrand && matchCategory
     })
-  }, [products, search, filterBrand])
+  }, [products, search, filterBrand, filterCategory])
 
   const handleOpenProductModal = (product?: Product) => {
     if (product) {
@@ -77,11 +87,17 @@ export default function Products() {
       setProductForm({
         name: product.name,
         brandId: product.brandId,
+        categoryId: product.categoryId || 'none',
         searchTerms: product.searchTerms,
       })
     } else {
       setEditingProduct(null)
-      setProductForm({ name: '', brandId: '', searchTerms: '' })
+      setProductForm({
+        name: '',
+        brandId: '',
+        categoryId: 'none',
+        searchTerms: '',
+      })
     }
     setIsProductModalOpen(true)
   }
@@ -96,11 +112,21 @@ export default function Products() {
       return
     }
     try {
+      const payload = {
+        name: productForm.name,
+        brandId: productForm.brandId,
+        categoryId:
+          productForm.categoryId === 'none'
+            ? undefined
+            : productForm.categoryId,
+        searchTerms: productForm.searchTerms,
+      }
+
       if (editingProduct) {
-        await updateProduct(editingProduct.id, productForm)
+        await updateProduct(editingProduct.id, payload)
         toast({ title: 'Sucesso', description: 'Produto atualizado' })
       } else {
-        await addProduct(productForm)
+        await addProduct(payload)
         toast({ title: 'Sucesso', description: 'Produto cadastrado' })
       }
       setIsProductModalOpen(false)
@@ -128,18 +154,40 @@ export default function Products() {
     }
   }
 
+  const handleAddCategory = async () => {
+    if (!categoryName) return
+    try {
+      await addProductCategory({ name: categoryName })
+      setCategoryName('')
+      toast({ title: 'Sucesso', description: 'Categoria cadastrada' })
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
   const confirmDelete = async () => {
     if (!deleteConfirm) return
     try {
       if (deleteConfirm.type === 'product') {
         await deleteProduct(deleteConfirm.id)
         toast({ title: 'Sucesso', description: 'Produto removido' })
-      } else {
+      } else if (deleteConfirm.type === 'brand') {
         await deleteBrand(deleteConfirm.id)
         toast({
           title: 'Sucesso',
           description:
             'Marca removida. Produtos vinculados também foram apagados.',
+        })
+      } else if (deleteConfirm.type === 'category') {
+        await deleteProductCategory(deleteConfirm.id)
+        toast({
+          title: 'Sucesso',
+          description:
+            'Categoria removida. Produtos vinculados ficaram sem categoria.',
         })
       }
       setDeleteConfirm(null)
@@ -161,10 +209,18 @@ export default function Products() {
             Catálogo de Produtos
           </h1>
           <p className="text-gray-500 mt-2">
-            Gerencie marcas, produtos e seus termos de pesquisa
+            Gerencie categorias, marcas, produtos e seus termos de pesquisa
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="border-[#227b50] text-[#227b50] hover:bg-[#227b50]/10"
+          >
+            <FolderOpen className="w-4 h-4 mr-2" />
+            Gerenciar Categorias
+          </Button>
           <Button
             variant="outline"
             onClick={() => setIsBrandModalOpen(true)}
@@ -184,7 +240,7 @@ export default function Products() {
       </div>
 
       <div className="rounded-xl border border-gray-200/60 bg-white shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
@@ -194,8 +250,21 @@ export default function Products() {
               className="pl-9 bg-gray-50/50"
             />
           </div>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-full md:w-[200px] bg-gray-50/50">
+              <SelectValue placeholder="Filtrar por categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              {productCategories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={filterBrand} onValueChange={setFilterBrand}>
-            <SelectTrigger className="w-full sm:w-[200px] bg-gray-50/50">
+            <SelectTrigger className="w-full md:w-[200px] bg-gray-50/50">
               <SelectValue placeholder="Filtrar por marca" />
             </SelectTrigger>
             <SelectContent>
@@ -213,6 +282,9 @@ export default function Products() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredProducts.map((p) => {
               const brand = brands.find((b) => b.id === p.brandId)
+              const category = productCategories.find(
+                (c) => c.id === p.categoryId,
+              )
               const terms = p.searchTerms
                 .split(',')
                 .map((t) => t.trim())
@@ -225,7 +297,8 @@ export default function Products() {
                   <div className="p-4 pb-3 bg-gray-50/80 border-b border-gray-100 flex flex-row items-start justify-between">
                     <div>
                       <div className="text-[10px] font-bold text-[#227b50] mb-1 uppercase tracking-wider">
-                        {brand?.name || 'Sem Marca'}
+                        {brand?.name || 'Sem Marca'}{' '}
+                        {category ? `• ${category.name}` : ''}
                       </div>
                       <h3
                         className="text-base font-semibold leading-tight text-gray-900 line-clamp-2"
@@ -289,8 +362,7 @@ export default function Products() {
                   Nenhum produto encontrado
                 </h3>
                 <p className="text-gray-500 max-w-sm">
-                  Tente ajustar seus filtros de busca ou crie um novo produto
-                  para esta marca.
+                  Tente ajustar seus filtros de busca ou crie um novo produto.
                 </p>
               </div>
             )}
@@ -327,7 +399,28 @@ export default function Products() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Nome do Produto / Categoria *</Label>
+              <Label>Categoria</Label>
+              <Select
+                value={productForm.categoryId}
+                onValueChange={(v) =>
+                  setProductForm({ ...productForm, categoryId: v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem Categoria</SelectItem>
+                  {productCategories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Nome do Produto *</Label>
               <Input
                 placeholder="Ex: Pisos e revestimentos"
                 value={productForm.name}
@@ -363,6 +456,65 @@ export default function Products() {
               className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
             >
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Categorias</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Nome da nova categoria"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+              />
+              <Button
+                onClick={handleAddCategory}
+                className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
+              >
+                Adicionar
+              </Button>
+            </div>
+
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+              {productCategories.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:bg-gray-100"
+                >
+                  <span className="font-medium text-gray-700">{c.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-white"
+                    onClick={() =>
+                      setDeleteConfirm({ id: c.id, type: 'category' })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {productCategories.length === 0 && (
+                <div className="text-center py-8 text-sm text-gray-500 flex flex-col items-center">
+                  <FolderOpen className="w-8 h-8 text-gray-300 mb-2" />
+                  Nenhuma categoria cadastrada.
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCategoryModalOpen(false)}
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -438,7 +590,9 @@ export default function Products() {
           <div className="py-2 text-gray-600">
             {deleteConfirm?.type === 'brand'
               ? 'Ao excluir esta marca, TODOS os produtos associados a ela também serão permanentemente excluídos. Esta ação não pode ser desfeita.'
-              : 'Esta ação não pode ser desfeita. O produto será permanentemente excluído.'}
+              : deleteConfirm?.type === 'category'
+                ? 'Ao excluir esta categoria, os produtos associados a ela ficarão sem categoria. Esta ação não pode ser desfeita.'
+                : 'Esta ação não pode ser desfeita. O produto será permanentemente excluído.'}
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setDeleteConfirm(null)}>

@@ -143,9 +143,16 @@ export interface Brand {
   createdAt: string
 }
 
+export interface ProductCategory {
+  id: string
+  name: string
+  createdAt: string
+}
+
 export interface Product {
   id: string
   brandId: string
+  categoryId?: string
   name: string
   searchTerms: string
   createdAt: string
@@ -163,6 +170,7 @@ interface DataStore {
   customers: Customer[]
   onboardings: OnboardingData[]
   brands: Brand[]
+  productCategories: ProductCategory[]
   products: Product[]
 
   fetchInitialData: () => Promise<void>
@@ -197,6 +205,11 @@ interface DataStore {
   updateBrand: (id: string, data: Partial<Brand>) => Promise<void>
   deleteBrand: (id: string) => Promise<void>
 
+  addProductCategory: (
+    cat: Omit<ProductCategory, 'id' | 'createdAt'>,
+  ) => Promise<string>
+  deleteProductCategory: (id: string) => Promise<void>
+
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<string>
   updateProduct: (id: string, data: Partial<Product>) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -214,6 +227,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   customers: [],
   onboardings: [],
   brands: [],
+  productCategories: [],
   products: [],
 
   fetchInitialData: async () => {
@@ -235,6 +249,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       { data: onboardingsData },
       { data: brandsData },
       { data: productsData },
+      { data: productCategoriesData },
     ] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase
@@ -403,9 +418,18 @@ export const useDataStore = create<DataStore>((set, get) => ({
       createdAt: b.created_at,
     }))
 
+    const mappedProductCategories: ProductCategory[] = (
+      productCategoriesData || []
+    ).map((c) => ({
+      id: c.id,
+      name: c.name,
+      createdAt: c.created_at,
+    }))
+
     const mappedProducts: Product[] = (productsData || []).map((p) => ({
       id: p.id,
       brandId: p.brand_id || '',
+      categoryId: p.category_id || undefined,
       name: p.name,
       searchTerms: p.search_terms || '',
       createdAt: p.created_at,
@@ -423,6 +447,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       customers: mappedCustomers,
       onboardings: mappedOnboardings,
       brands: mappedBrands,
+      productCategories: mappedProductCategories,
       products: mappedProducts,
     })
   },
@@ -1091,9 +1116,39 @@ export const useDataStore = create<DataStore>((set, get) => ({
     }))
   },
 
+  addProductCategory: async (cat) => {
+    const { data } = await supabase
+      .from('product_categories')
+      .insert(cat)
+      .select()
+      .single()
+    if (data) {
+      const newCat: ProductCategory = {
+        id: data.id,
+        name: data.name,
+        createdAt: data.created_at,
+      }
+      set((state) => ({
+        productCategories: [...state.productCategories, newCat].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      }))
+      return data.id
+    }
+    return ''
+  },
+
+  deleteProductCategory: async (id) => {
+    await supabase.from('product_categories').delete().eq('id', id)
+    set((state) => ({
+      productCategories: state.productCategories.filter((c) => c.id !== id),
+    }))
+  },
+
   addProduct: async (product) => {
     const dbProduct = {
       brand_id: product.brandId,
+      category_id: product.categoryId || null,
       name: product.name,
       search_terms: product.searchTerms,
     }
@@ -1106,6 +1161,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       const newProduct: Product = {
         id: data.id,
         brandId: data.brand_id || '',
+        categoryId: data.category_id || undefined,
         name: data.name,
         searchTerms: data.search_terms || '',
         createdAt: data.created_at,
@@ -1124,6 +1180,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
     const updatePayload: any = {}
     if (data.name !== undefined) updatePayload.name = data.name
     if (data.brandId !== undefined) updatePayload.brand_id = data.brandId
+    if (data.categoryId !== undefined)
+      updatePayload.category_id = data.categoryId || null
     if (data.searchTerms !== undefined)
       updatePayload.search_terms = data.searchTerms
 

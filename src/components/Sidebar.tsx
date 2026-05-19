@@ -11,6 +11,7 @@ import {
   UserCog,
   Key,
   Building2,
+  PackageSearch,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -80,6 +81,12 @@ export function Sidebar() {
       label: 'Clientes',
       path: '/customers',
       resource: 'customers',
+    },
+    {
+      icon: PackageSearch,
+      label: 'Produtos',
+      path: '/products',
+      resource: 'products',
     },
     {
       icon: Rocket,

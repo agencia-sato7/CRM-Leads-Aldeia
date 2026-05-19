@@ -137,6 +137,20 @@ export interface Resource {
   url?: string
 }
 
+export interface Brand {
+  id: string
+  name: string
+  createdAt: string
+}
+
+export interface Product {
+  id: string
+  brandId: string
+  name: string
+  searchTerms: string
+  createdAt: string
+}
+
 interface DataStore {
   users: User[]
   currentUser: User | null
@@ -148,6 +162,8 @@ interface DataStore {
   services: Service[]
   customers: Customer[]
   onboardings: OnboardingData[]
+  brands: Brand[]
+  products: Product[]
 
   fetchInitialData: () => Promise<void>
   updateUser: (id: string, data: Partial<User>) => Promise<void>
@@ -176,6 +192,14 @@ interface DataStore {
   addService: (svc: Omit<Service, 'id'>) => Promise<string>
   updateService: (id: string, data: Partial<Service>) => Promise<void>
   deleteService: (id: string) => Promise<void>
+
+  addBrand: (brand: Omit<Brand, 'id' | 'createdAt'>) => Promise<string>
+  updateBrand: (id: string, data: Partial<Brand>) => Promise<void>
+  deleteBrand: (id: string) => Promise<void>
+
+  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<string>
+  updateProduct: (id: string, data: Partial<Product>) => Promise<void>
+  deleteProduct: (id: string) => Promise<void>
 }
 
 export const useDataStore = create<DataStore>((set, get) => ({
@@ -189,6 +213,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
   services: [],
   customers: [],
   onboardings: [],
+  brands: [],
+  products: [],
 
   fetchInitialData: async () => {
     const {
@@ -207,6 +233,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       { data: servicesData },
       { data: customersData },
       { data: onboardingsData },
+      { data: brandsData },
+      { data: productsData },
     ] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase
@@ -242,6 +270,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
         .from('onboardings')
         .select('*')
         .order('created_at', { ascending: false }),
+      supabase.from('brands').select('*').order('name', { ascending: true }),
+      supabase.from('products').select('*').order('name', { ascending: true }),
     ])
 
     const mappedUsers: User[] = (profiles || []).map((p) => ({
@@ -367,6 +397,20 @@ export const useDataStore = create<DataStore>((set, get) => ({
       }),
     )
 
+    const mappedBrands: Brand[] = (brandsData || []).map((b) => ({
+      id: b.id,
+      name: b.name,
+      createdAt: b.created_at,
+    }))
+
+    const mappedProducts: Product[] = (productsData || []).map((p) => ({
+      id: p.id,
+      brandId: p.brand_id || '',
+      name: p.name,
+      searchTerms: p.search_terms || '',
+      createdAt: p.created_at,
+    }))
+
     set({
       users: mappedUsers,
       currentUser,
@@ -378,6 +422,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       services: mappedServices,
       customers: mappedCustomers,
       onboardings: mappedOnboardings,
+      brands: mappedBrands,
+      products: mappedProducts,
     })
   },
 
@@ -1004,5 +1050,97 @@ export const useDataStore = create<DataStore>((set, get) => ({
       return data.id
     }
     return ''
+  },
+
+  addBrand: async (brand) => {
+    const { data } = await supabase
+      .from('brands')
+      .insert(brand)
+      .select()
+      .single()
+    if (data) {
+      const newBrand: Brand = {
+        id: data.id,
+        name: data.name,
+        createdAt: data.created_at,
+      }
+      set((state) => ({
+        brands: [...state.brands, newBrand].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      }))
+      return data.id
+    }
+    return ''
+  },
+
+  updateBrand: async (id, data) => {
+    await supabase.from('brands').update(data).eq('id', id)
+    set((state) => ({
+      brands: state.brands
+        .map((b) => (b.id === id ? { ...b, ...data } : b))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+  },
+
+  deleteBrand: async (id) => {
+    await supabase.from('brands').delete().eq('id', id)
+    set((state) => ({
+      brands: state.brands.filter((b) => b.id !== id),
+      products: state.products.filter((p) => p.brandId !== id),
+    }))
+  },
+
+  addProduct: async (product) => {
+    const dbProduct = {
+      brand_id: product.brandId,
+      name: product.name,
+      search_terms: product.searchTerms,
+    }
+    const { data } = await supabase
+      .from('products')
+      .insert(dbProduct)
+      .select()
+      .single()
+    if (data) {
+      const newProduct: Product = {
+        id: data.id,
+        brandId: data.brand_id || '',
+        name: data.name,
+        searchTerms: data.search_terms || '',
+        createdAt: data.created_at,
+      }
+      set((state) => ({
+        products: [...state.products, newProduct].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      }))
+      return data.id
+    }
+    return ''
+  },
+
+  updateProduct: async (id, data) => {
+    const updatePayload: any = {}
+    if (data.name !== undefined) updatePayload.name = data.name
+    if (data.brandId !== undefined) updatePayload.brand_id = data.brandId
+    if (data.searchTerms !== undefined)
+      updatePayload.search_terms = data.searchTerms
+
+    if (Object.keys(updatePayload).length > 0) {
+      await supabase.from('products').update(updatePayload).eq('id', id)
+      set((state) => ({
+        products: state.products
+          .map((p) => (p.id === id ? { ...p, ...data } : p))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      }))
+    }
+  },
+
+  deleteProduct: async (id) => {
+    await supabase.from('products').delete().eq('id', id)
+    set((state) => ({
+      products: state.products.filter((p) => p.id !== id),
+    }))
   },
 }))

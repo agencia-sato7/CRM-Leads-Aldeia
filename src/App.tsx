@@ -19,6 +19,7 @@ import Admin from './pages/Admin'
 import Team from './pages/Team'
 import Roles from './pages/Roles'
 import Customers from './pages/Customers'
+import Products from './pages/Products'
 import NotFound from './pages/NotFound'
 import { RequireRole } from './components/RequireRole'
 import { RequirePermission } from './components/RequirePermission'
@@ -135,6 +136,14 @@ const App = () => (
                 element={
                   <RequirePermission resource="customers">
                     <Customers />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/products"
+                element={
+                  <RequirePermission resource="products">
+                    <Products />
                   </RequirePermission>
                 }
               />

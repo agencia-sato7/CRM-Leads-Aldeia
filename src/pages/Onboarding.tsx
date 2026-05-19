@@ -186,6 +186,23 @@ export default function Onboarding() {
         marketingContext: formData.marketingContext,
       })
 
+      // Update related customer profile/record if it exists to ensure onboarding fields are persisted
+      const customer = customers.find(
+        (c) =>
+          c.company.toLowerCase() === formData.companyName.toLowerCase() ||
+          (c.email && c.email === formData.email),
+      )
+
+      if (customer) {
+        await supabase
+          .from('customers')
+          .update({
+            phone: formData.phone,
+            cnpj: formData.cnpj,
+          })
+          .eq('id', customer.id)
+      }
+
       try {
         const { data, error } = await supabase.functions.invoke(
           'send-onboarding-email',

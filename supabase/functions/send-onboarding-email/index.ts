@@ -1,11 +1,15 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import nodemailer from 'npm:nodemailer@6.9.13'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
-}
+const SMTP_HOST = Deno.env.get('SMTP_HOST')
+const SMTP_PORT = Number(Deno.env.get('SMTP_PORT') || '587')
+const SMTP_USER = Deno.env.get('SMTP_USER')
+const SMTP_PASS = Deno.env.get('SMTP_PASS')
+const SMTP_FROM = Deno.env.get('SMTP_FROM')
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -13,10 +17,35 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('Authorization header missing')
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error('Missing Supabase environment variables')
+    }
+
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    })
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser()
+    if (userError || !user) {
+      throw new Error('Unauthorized: Invalid or expired token')
+    }
+
     const { emails, onboarding } = await req.json()
 
     if (!emails || !Array.isArray(emails) || emails.length === 0) {
       throw new Error('Lista de e-mails vazia ou inválida')
+    }
+
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
+      throw new Error('Missing SMTP environment variables')
     }
 
     const htmlTemplate = `
@@ -88,44 +117,24 @@ Deno.serve(async (req: Request) => {
       </div>
     `
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-
-    if (!resendApiKey) {
-      console.warn(`[SIMULATED DISPATCH] Emails to send: ${emails.join(', ')}`)
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error:
-            'Chave da API do Resend não configurada (Variável de ambiente RESEND_API_KEY ausente no Supabase Edge Functions).',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        },
-      )
-    }
-
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${resendApiKey}`,
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
       },
-      body: JSON.stringify({
-        from: 'S7SALES CRM <onboarding@s7sales.appsato7.com.br>',
-        to: emails,
-        subject: `🚀 Novo Onboarding: ${onboarding.companyName}`,
-        html: htmlTemplate,
-      }),
     })
 
-    if (!res.ok) {
-      const errorData = await res.text()
-      console.error('Resend API error:', errorData)
-      throw new Error(`Resposta da API do Resend: ${errorData}`)
-    }
+    const info = await transporter.sendMail({
+      from: SMTP_FROM,
+      to: emails.join(', '),
+      subject: `🚀 Novo Onboarding: ${onboarding.companyName}`,
+      html: htmlTemplate,
+    })
 
-    console.log(`[RESEND] Email successfully sent to: ${emails.join(', ')}`)
+    console.log('Email sent via SMTP:', info.messageId)
 
     return new Response(
       JSON.stringify({

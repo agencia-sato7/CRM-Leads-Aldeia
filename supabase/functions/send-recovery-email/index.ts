@@ -1,13 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.13'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 // SMTP configuration from environment variables
 const SMTP_HOST = Deno.env.get('SMTP_HOST')
@@ -33,7 +27,14 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
+    if (
+      !SUPABASE_URL ||
+      !SUPABASE_SERVICE_ROLE_KEY ||
+      !SMTP_HOST ||
+      !SMTP_USER ||
+      !SMTP_PASS ||
+      !SMTP_FROM
+    ) {
       throw new Error('Missing environment variables (SMTP or Supabase)')
     }
 

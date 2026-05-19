@@ -101,6 +101,4 @@ export default function ForgotPassword() {
           )}
         </div>
       </div>
-    </div>
-  )
-}
+    </div

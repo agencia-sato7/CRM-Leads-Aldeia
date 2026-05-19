@@ -173,7 +173,7 @@ export default function Roles() {
     <div className="space-y-6 animate-fade-in pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20">
+          <div className="p-3 bg-[#227b50] text-white rounded-xl shadow-lg shadow-[#227b50]/20">
             <Key className="w-6 h-6" />
           </div>
           <div>
@@ -187,7 +187,7 @@ export default function Roles() {
         </div>
         <Button
           onClick={() => handleOpenDialog()}
-          className="bg-red-600 hover:bg-red-700"
+          className="bg-[#227b50] hover:bg-[#1a5c3c]"
         >
           <Plus className="w-4 h-4 mr-2" />
           Novo Papel
@@ -226,11 +226,11 @@ export default function Roles() {
                     </td>
                     <td className="py-3 px-4">
                       {role.is_system ? (
-                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/10">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-500/10">
                           Sistema
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-[#227b50]/10 text-[#227b50] ring-1 ring-inset ring-[#227b50]/20">
                           Customizado
                         </span>
                       )}
@@ -248,7 +248,7 @@ export default function Roles() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                          className="text-[#227b50] hover:text-[#1a5c3c] hover:bg-[#227b50]/10 h-8 w-8"
                           onClick={() => handleDelete(role.id)}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -268,7 +268,7 @@ export default function Roles() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Key className="w-5 h-5 text-red-600" />{' '}
+                <Key className="w-5 h-5 text-[#227b50]" />{' '}
                 {editingRole ? 'Editar Papel' : 'Novo Papel'}
               </h2>
             </div>
@@ -287,7 +287,7 @@ export default function Roles() {
                         name: e.target.value.toUpperCase(),
                       })
                     }
-                    className="border-gray-200"
+                    className="border-gray-200 focus-visible:ring-[#227b50]"
                     disabled={editingRole?.is_system}
                     placeholder="Ex: GERENTE"
                   />
@@ -301,7 +301,7 @@ export default function Roles() {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    className="border-gray-200"
+                    className="border-gray-200 focus-visible:ring-[#227b50]"
                     placeholder="Ex: Acesso gerencial ao sistema"
                   />
                 </div>
@@ -325,45 +325,49 @@ export default function Roles() {
                       <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <label className="flex items-center space-x-2 cursor-pointer group">
                           <Switch
+                            className="data-[state=checked]:bg-[#227b50]"
                             checked={rolePerms[res.value]?.can_read || false}
                             onCheckedChange={() =>
                               togglePerm(res.value, 'can_read')
                             }
                           />
-                          <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                          <span className="text-sm text-gray-600 group-hover:text-[#227b50] transition-colors">
                             Visualizar
                           </span>
                         </label>
                         <label className="flex items-center space-x-2 cursor-pointer group">
                           <Switch
+                            className="data-[state=checked]:bg-[#227b50]"
                             checked={rolePerms[res.value]?.can_create || false}
                             onCheckedChange={() =>
                               togglePerm(res.value, 'can_create')
                             }
                           />
-                          <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                          <span className="text-sm text-gray-600 group-hover:text-[#227b50] transition-colors">
                             Criar
                           </span>
                         </label>
                         <label className="flex items-center space-x-2 cursor-pointer group">
                           <Switch
+                            className="data-[state=checked]:bg-[#227b50]"
                             checked={rolePerms[res.value]?.can_update || false}
                             onCheckedChange={() =>
                               togglePerm(res.value, 'can_update')
                             }
                           />
-                          <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                          <span className="text-sm text-gray-600 group-hover:text-[#227b50] transition-colors">
                             Editar
                           </span>
                         </label>
                         <label className="flex items-center space-x-2 cursor-pointer group">
                           <Switch
+                            className="data-[state=checked]:bg-[#227b50]"
                             checked={rolePerms[res.value]?.can_delete || false}
                             onCheckedChange={() =>
                               togglePerm(res.value, 'can_delete')
                             }
                           />
-                          <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                          <span className="text-sm text-gray-600 group-hover:text-[#227b50] transition-colors">
                             Excluir
                           </span>
                         </label>
@@ -377,13 +381,13 @@ export default function Roles() {
             <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-xl">
               <Button
                 variant="outline"
-                className="bg-white"
+                className="bg-white hover:text-[#227b50] hover:border-[#227b50]"
                 onClick={() => setIsDialogOpen(false)}
               >
                 Cancelar
               </Button>
               <Button
-                className="bg-red-600 hover:bg-red-700 shadow-md"
+                className="bg-[#227b50] hover:bg-[#1a5c3c] shadow-md text-white"
                 onClick={handleSave}
               >
                 Salvar Papel

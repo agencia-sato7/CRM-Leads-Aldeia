@@ -1008,12 +1008,13 @@ export default function Leads() {
                           !lead.userId) &&
                         lead.status !== 'Ganho' ? (
                           <div className="flex flex-col gap-1.5 items-start">
-                            {lead.meetings.length > 0 && (
+                            {lead.meetings.length > 0 ? (
                               <Badge
                                 variant="outline"
-                                className="flex w-max gap-1 items-center shadow-none text-[10px] px-1.5 py-0 bg-green-50 text-green-700 border-green-200"
+                                className="flex w-max gap-1 items-center shadow-none text-[10px] px-1.5 py-0 bg-[#227b50]/10 text-[#227b50] border-[#227b50]/20"
                               >
                                 <CheckCircle2 className="w-3 h-3" />
+                                Visita Concluída em{' '}
                                 {format(
                                   new Date(
                                     [...lead.meetings].sort(
@@ -1025,22 +1026,23 @@ export default function Leads() {
                                   'dd/MM/yy HH:mm',
                                 )}
                               </Badge>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-[10px] h-7 bg-[#227b50]/5 text-[#227b50] border-[#227b50]/20 hover:bg-[#227b50]/10 px-2"
+                                onClick={() => {
+                                  setScheduleLead(lead)
+                                  setScheduleFormData({
+                                    date: '',
+                                    notes: lead.notes || '',
+                                  })
+                                }}
+                              >
+                                <CalendarDays className="w-3 h-3 mr-1" />
+                                Agendar
+                              </Button>
                             )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-[10px] h-7 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 px-2"
-                              onClick={() => {
-                                setScheduleLead(lead)
-                                setScheduleFormData({
-                                  date: '',
-                                  notes: lead.notes || '',
-                                })
-                              }}
-                            >
-                              <CalendarDays className="w-3 h-3 mr-1" />
-                              Agendar
-                            </Button>
                           </div>
                         ) : (
                           <span className="text-gray-400 text-xs">-</span>
@@ -1095,7 +1097,7 @@ export default function Leads() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-6 w-6 p-0 bg-white text-green-600 border-green-200 hover:bg-green-50"
+                                    className="h-6 w-6 p-0 bg-white text-[#227b50] border-[#227b50]/30 hover:bg-[#227b50]/10"
                                     onClick={() => {
                                       setConcludeLead(lead)
                                       setConcludeFormData({ notes: '' })
@@ -1249,7 +1251,7 @@ export default function Leads() {
               Cancelar
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-[#227b50] hover:bg-[#1a5c3c] text-white"
               onClick={handleConcludeMeeting}
             >
               Confirmar Conclusão
@@ -1679,7 +1681,7 @@ export default function Leads() {
                 </div>
                 {editLead.meetings?.length > 0 ? (
                   <div className="space-y-3 border-t border-gray-200 pt-3">
-                    <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2.5 rounded-md border border-green-200">
+                    <div className="flex items-center gap-2 text-sm text-[#227b50] bg-[#227b50]/5 p-2.5 rounded-md border border-[#227b50]/20">
                       <CheckCircle2 className="w-4 h-4" />
                       <span className="font-medium">
                         Reunião concluída em{' '}

@@ -782,12 +782,25 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   updateOpportunityStatus: async (id, status) => {
+    const opp = get().opportunities.find((o) => o.id === id)
+    const currentUser = get().currentUser
+
+    if (
+      opp &&
+      currentUser?.role === 'COMMERCIAL' &&
+      (opp.status === 'Ganha' || (opp.status as string) === 'Fechado')
+    ) {
+      console.error(
+        'Ação Bloqueada: Oportunidades ganhas/fechadas não podem ter seu status alterado por usuários comerciais.',
+      )
+      return
+    }
+
     await supabase
       .from('opportunities')
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
 
-    const opp = get().opportunities.find((o) => o.id === id)
     let newUserId: string | undefined = undefined
     if (opp) {
       if (status === 'Aberta' || status === 'Aguardando') {

@@ -497,10 +497,24 @@ export default function Opportunities() {
                       <div
                         className="inline-block"
                         onClick={() => {
-                          if (opp.userId && opp.userId !== currentUser.id) {
+                          const notOwnerBlock =
+                            opp.userId &&
+                            opp.userId !== currentUser.id &&
+                            currentUser.role !== 'ADMIN'
+                          const terminalBlock =
+                            currentUser.role === 'COMMERCIAL' &&
+                            (opp.status === 'Ganha' ||
+                              (opp.status as string) === 'Fechado')
+
+                          if (notOwnerBlock) {
                             toast.error('Ação Bloqueada', {
                               description:
-                                'Apenas o responsável pode alterar esta oportunidade.',
+                                'Apenas o responsável ou um administrador pode alterar esta oportunidade.',
+                            })
+                          } else if (terminalBlock) {
+                            toast.error('Ação Bloqueada', {
+                              description:
+                                'Oportunidades ganhas ou fechadas não podem ter seu status alterado.',
                             })
                           }
                         }}
@@ -508,7 +522,12 @@ export default function Opportunities() {
                         <Select
                           value={opp.status}
                           disabled={
-                            !!opp.userId && opp.userId !== currentUser.id
+                            (!!opp.userId &&
+                              opp.userId !== currentUser.id &&
+                              currentUser.role !== 'ADMIN') ||
+                            (currentUser.role === 'COMMERCIAL' &&
+                              (opp.status === 'Ganha' ||
+                                (opp.status as string) === 'Fechado'))
                           }
                           onValueChange={async (v) => {
                             await updateOpportunityStatus(

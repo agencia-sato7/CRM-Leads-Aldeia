@@ -287,6 +287,10 @@ export const useDataStore = create<DataStore>((set, get) => ({
         .order('created_at', { ascending: false }),
       supabase.from('brands').select('*').order('name', { ascending: true }),
       supabase.from('products').select('*').order('name', { ascending: true }),
+      supabase
+        .from('product_categories')
+        .select('*')
+        .order('name', { ascending: true }),
     ])
 
     const mappedUsers: User[] = (profiles || []).map((p) => ({

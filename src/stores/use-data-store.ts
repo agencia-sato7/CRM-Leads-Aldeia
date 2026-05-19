@@ -82,6 +82,7 @@ export interface Opportunity {
   userId: string
   createdAt: string
   updatedAt: string
+  quantity: number
 }
 
 export interface Category {
@@ -354,6 +355,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         status: opp.status as OppStatus,
         createdAt: opp.created_at,
         updatedAt: opp.updated_at,
+        quantity: Number((opp as any).quantity || 1),
       }))
 
       const mappedMessages: Message[] = (messagesData || []).map((msg) => ({
@@ -551,6 +553,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
             status: newOpp.status as OppStatus,
             createdAt: newOpp.created_at,
             updatedAt: newOpp.updated_at,
+            quantity: Number((newOpp as any).quantity || 1),
           }
           set((state) => ({
             opportunities: [mappedOpp, ...state.opportunities],
@@ -668,6 +671,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
             status: newOpp.status as OppStatus,
             createdAt: newOpp.created_at,
             updatedAt: newOpp.updated_at,
+            quantity: Number((newOpp as any).quantity || 1),
           }
           set((state) => ({
             opportunities: state.opportunities.some(
@@ -697,6 +701,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       service: opp.service,
       value: opp.value,
       status: opp.status,
+      quantity: opp.quantity || 1,
     }
 
     const { data } = await supabase

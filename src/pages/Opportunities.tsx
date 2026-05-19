@@ -59,6 +59,8 @@ export default function Opportunities() {
     brandId: 'all',
     productId: '',
     value: '',
+    unitPrice: '',
+    quantity: 1,
     status: 'Aguardando' as OppStatus,
     leadNeeds: '',
     userId: '',
@@ -72,34 +74,34 @@ export default function Opportunities() {
 
       if (selectedLead) {
         lastProcessedLeadId.current = formData.leadId
-        let val = selectedLead.estimatedValue?.toString() || ''
+        let baseVal = selectedLead.estimatedValue?.toString() || ''
         let lUserId = selectedLead.userId || ''
+        let lQtd = selectedLead.quantity || 1
 
         if (selectedLead.product_id) {
           const prod = products?.find((p) => p.id === selectedLead.product_id)
           if (prod) {
+            baseVal = prod.price.toString()
             setFormData((prev) => ({
               ...prev,
               productId: prod.id,
               categoryId: prod.categoryId || 'all',
               brandId: prod.brandId || 'all',
-              value: prev.value || val || prod.price.toString(),
+              unitPrice: baseVal,
+              quantity: lQtd,
+              value: (Number(baseVal) * lQtd).toString(),
               userId: prev.userId || lUserId,
             }))
-          } else {
-            setFormData((prev) => ({
-              ...prev,
-              value: prev.value || val,
-              userId: prev.userId || lUserId,
-            }))
+            return
           }
-        } else {
-          setFormData((prev) => ({
-            ...prev,
-            value: prev.value || val,
-            userId: prev.userId || lUserId,
-          }))
         }
+        setFormData((prev) => ({
+          ...prev,
+          unitPrice: baseVal,
+          quantity: lQtd,
+          value: baseVal ? (Number(baseVal) * lQtd).toString() : prev.value,
+          userId: prev.userId || lUserId,
+        }))
       }
     }
   }, [formData.leadId, leads, products])
@@ -127,6 +129,7 @@ export default function Opportunities() {
       type: 'Job', // Compatibilidade
       service: prod ? prod.name : '',
       value: Number(formData.value),
+      quantity: formData.quantity,
       status: formData.status,
       userId:
         formData.userId ||
@@ -139,6 +142,8 @@ export default function Opportunities() {
       brandId: 'all',
       productId: '',
       value: '',
+      unitPrice: '',
+      quantity: 1,
       status: 'Aguardando',
       leadNeeds: '',
       userId: '',
@@ -179,6 +184,8 @@ export default function Opportunities() {
                 brandId: 'all',
                 productId: '',
                 value: '',
+                unitPrice: '',
+                quantity: 1,
                 status: 'Aguardando',
                 leadNeeds: '',
                 userId: '',
@@ -241,6 +248,9 @@ export default function Opportunities() {
                               let cId = 'all'
                               let bId = 'all'
 
+                              let baseVal = value
+                              let lQtd = l.quantity || 1
+
                               if (l.product_id) {
                                 const prod = products?.find(
                                   (p) => p.id === l.product_id,
@@ -249,8 +259,13 @@ export default function Opportunities() {
                                   pId = prod.id
                                   cId = prod.categoryId || 'all'
                                   bId = prod.brandId || 'all'
-                                  if (!value) value = prod.price.toString()
+                                  baseVal = prod.price.toString()
+                                  value = (Number(baseVal) * lQtd).toString()
                                 }
+                              } else {
+                                value = baseVal
+                                  ? (Number(baseVal) * lQtd).toString()
+                                  : value
                               }
 
                               setFormData((prev) => ({
@@ -259,6 +274,8 @@ export default function Opportunities() {
                                 productId: pId,
                                 categoryId: cId,
                                 brandId: bId,
+                                unitPrice: baseVal,
+                                quantity: lQtd,
                                 value: value,
                                 leadNeeds: l.notes || prev.leadNeeds,
                                 userId: l.userId || prev.userId,
@@ -369,10 +386,16 @@ export default function Opportunities() {
                     value={formData.productId || undefined}
                     onValueChange={(v) => {
                       const prod = products?.find((p) => p.id === v)
+                      const newUnit = prod
+                        ? prod.price.toString()
+                        : formData.unitPrice
                       setFormData({
                         ...formData,
                         productId: v,
-                        value: prod ? prod.price.toString() : formData.value,
+                        unitPrice: newUnit,
+                        value: newUnit
+                          ? (Number(newUnit) * formData.quantity).toString()
+                          : formData.value,
                       })
                     }}
                   >
@@ -397,35 +420,61 @@ export default function Opportunities() {
                   </Select>
                 </div>
               </div>
-              <div>
-                <label className="text-sm font-medium">
-                  Valor Estimado de Fechamento
-                </label>
-                <Input
-                  type="text"
-                  required
-                  value={
-                    formData.value
-                      ? new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        }).format(Number(formData.value))
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, '')
-                    if (!digits) {
-                      setFormData({ ...formData, value: '' })
-                      return
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-1">
+                  <label className="text-sm font-medium">Quantidade</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    required
+                    value={formData.quantity}
+                    onChange={(e) => {
+                      const q = parseInt(e.target.value) || 1
+                      setFormData({
+                        ...formData,
+                        quantity: q,
+                        value: formData.unitPrice
+                          ? (Number(formData.unitPrice) * q).toString()
+                          : formData.value,
+                      })
+                    }}
+                    className="h-11 text-lg"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium">
+                    Valor Estimado de Fechamento
+                  </label>
+                  <Input
+                    type="text"
+                    required
+                    value={
+                      formData.value
+                        ? new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(Number(formData.value))
+                        : ''
                     }
-                    const num = Number(digits) / 100
-                    if (!isNaN(num)) {
-                      setFormData({ ...formData, value: num.toString() })
-                    }
-                  }}
-                  placeholder="R$ 0,00"
-                  className="h-11 text-lg font-semibold"
-                />
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      if (!digits) {
+                        setFormData({ ...formData, value: '', unitPrice: '' })
+                        return
+                      }
+                      const num = Number(digits) / 100
+                      if (!isNaN(num)) {
+                        setFormData({
+                          ...formData,
+                          value: num.toString(),
+                          unitPrice: (num / formData.quantity).toString(),
+                        })
+                      }
+                    }}
+                    placeholder="R$ 0,00"
+                    className="h-11 text-lg font-semibold"
+                  />
+                </div>
               </div>
               <DialogFooter className="mt-6">
                 <Button
@@ -467,6 +516,7 @@ export default function Opportunities() {
             <TableHeader className="bg-gray-50">
               <TableRow>
                 <TableHead>Lead</TableHead>
+                <TableHead className="w-16 text-center">Qtd</TableHead>
                 <TableHead>Produto</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
@@ -481,6 +531,9 @@ export default function Opportunities() {
                   <TableRow key={opp.id} className="hover:bg-gray-50/50">
                     <TableCell className="font-medium text-gray-900">
                       {lead.company}
+                    </TableCell>
+                    <TableCell className="text-center font-semibold text-gray-600">
+                      {opp.quantity || 1}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-gray-900 font-medium">

@@ -150,7 +150,6 @@ export default function Opportunities() {
     new Intl.NumberFormat(isUSA ? 'en-US' : 'pt-BR', {
       style: 'currency',
       currency: isUSA ? 'USD' : 'BRL',
-      maximumFractionDigits: 0,
     }).format(val)
 
   return (
@@ -403,13 +402,28 @@ export default function Opportunities() {
                   Valor Estimado de Fechamento
                 </label>
                 <Input
-                  type="number"
+                  type="text"
                   required
-                  value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
+                  value={
+                    formData.value
+                      ? new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(Number(formData.value))
+                      : ''
                   }
-                  placeholder="Ex: 5000"
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '')
+                    if (!digits) {
+                      setFormData({ ...formData, value: '' })
+                      return
+                    }
+                    const num = Number(digits) / 100
+                    if (!isNaN(num)) {
+                      setFormData({ ...formData, value: num.toString() })
+                    }
+                  }}
+                  placeholder="R$ 0,00"
                   className="h-11 text-lg font-semibold"
                 />
               </div>

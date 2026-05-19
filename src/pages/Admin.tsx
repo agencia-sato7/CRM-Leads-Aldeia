@@ -36,8 +36,8 @@ export default function Admin() {
         </TabsList>
 
         <TabsContent value="panel" className="outline-none space-y-6">
-          <RevenueChart />
           <AdminPanel />
+          <RevenueChart />
         </TabsContent>
 
         <TabsContent value="repository" className="outline-none">

@@ -190,12 +190,8 @@ export function RevenueChart({ userId = 'all' }: { userId?: string }) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickFormatter={(val) =>
-                  new Intl.NumberFormat('pt-BR', {
-                    notation: 'compact',
-                    compactDisplay: 'short',
-                  }).format(val)
-                }
+                tickFormatter={formatCurrency}
+                width={80}
                 dx={-10}
               />
               <ChartTooltip

@@ -12,7 +12,6 @@ import Layout from './components/Layout'
 import Index from './pages/Index'
 import Leads from './pages/Leads'
 import Opportunities from './pages/Opportunities'
-import PriceTable from './pages/PriceTable'
 import Onboarding from './pages/Onboarding'
 import Resources from './pages/Resources'
 import Admin from './pages/Admin'
@@ -96,14 +95,6 @@ const App = () => (
                 element={
                   <RequirePermission resource="opportunities">
                     <Opportunities />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="/price-table"
-                element={
-                  <RequirePermission resource="price-table">
-                    <PriceTable />
                   </RequirePermission>
                 }
               />

@@ -27,7 +27,6 @@ const RESOURCES = [
   { value: 'dashboard', label: 'Painel de Performance' },
   { value: 'leads', label: 'Leads' },
   { value: 'opportunities', label: 'Oportunidades' },
-  { value: 'price_table', label: 'Tabela de Preços' },
   { value: 'onboarding', label: 'Onboarding' },
   { value: 'resources', label: 'Materiais (Repositório)' },
   { value: 'team', label: 'Equipe' },

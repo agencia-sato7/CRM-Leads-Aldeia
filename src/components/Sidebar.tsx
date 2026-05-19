@@ -95,12 +95,6 @@ export function Sidebar() {
       resource: 'onboarding',
     },
     {
-      icon: FileText,
-      label: 'Tabela de Preços',
-      path: '/price-table',
-      resource: 'price-table',
-    },
-    {
       icon: FolderOpen,
       label: 'Materiais',
       path: '/resources',

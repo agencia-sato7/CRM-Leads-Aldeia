@@ -61,6 +61,7 @@ export default function Opportunities() {
     value: '',
     status: 'Aguardando' as OppStatus,
     leadNeeds: '',
+    userId: '',
   })
 
   const lastProcessedLeadId = useRef<string>('')
@@ -72,6 +73,7 @@ export default function Opportunities() {
       if (selectedLead) {
         lastProcessedLeadId.current = formData.leadId
         let val = selectedLead.estimatedValue?.toString() || ''
+        let lUserId = selectedLead.userId || ''
 
         if (selectedLead.product_id) {
           const prod = products?.find((p) => p.id === selectedLead.product_id)
@@ -82,17 +84,20 @@ export default function Opportunities() {
               categoryId: prod.categoryId || 'all',
               brandId: prod.brandId || 'all',
               value: prev.value || val || prod.price.toString(),
+              userId: prev.userId || lUserId,
             }))
           } else {
             setFormData((prev) => ({
               ...prev,
               value: prev.value || val,
+              userId: prev.userId || lUserId,
             }))
           }
         } else {
           setFormData((prev) => ({
             ...prev,
             value: prev.value || val,
+            userId: prev.userId || lUserId,
           }))
         }
       }
@@ -123,7 +128,8 @@ export default function Opportunities() {
       service: prod ? prod.name : '',
       value: Number(formData.value),
       status: formData.status,
-      userId: currentUser.role === 'ADMIN' ? null : currentUser.id,
+      userId:
+        formData.userId || (currentUser.role === 'ADMIN' ? '' : currentUser.id),
     })
     setIsOpen(false)
     setFormData({
@@ -134,6 +140,7 @@ export default function Opportunities() {
       value: '',
       status: 'Aguardando',
       leadNeeds: '',
+      userId: '',
     })
     lastProcessedLeadId.current = ''
   }
@@ -174,6 +181,7 @@ export default function Opportunities() {
                 value: '',
                 status: 'Aguardando',
                 leadNeeds: '',
+                userId: '',
               })
               lastProcessedLeadId.current = ''
             }
@@ -253,6 +261,7 @@ export default function Opportunities() {
                                 brandId: bId,
                                 value: value,
                                 leadNeeds: l.notes || prev.leadNeeds,
+                                userId: l.userId || prev.userId,
                               }))
                               setComboboxOpen(false)
                             }}
@@ -287,6 +296,28 @@ export default function Opportunities() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="text-sm font-medium">Responsável</label>
+                  <Select
+                    value={formData.userId}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, userId: v })
+                    }
+                  >
+                    <SelectTrigger className="bg-gray-50 h-10">
+                      <SelectValue placeholder="Selecione um responsável..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users
+                        ?.filter((u) => u.role === 'COMMERCIAL')
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <label className="text-sm font-medium">Categoria</label>
                   <Select

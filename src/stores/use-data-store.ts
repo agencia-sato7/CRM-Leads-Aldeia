@@ -717,7 +717,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   addOpportunity: async (opp) => {
     const dbOpp = {
       lead_id: opp.leadId,
-      user_id: opp.userId,
+      user_id: opp.userId || null,
       type: opp.type,
       service: opp.service,
       value: opp.value,

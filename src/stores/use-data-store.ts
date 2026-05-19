@@ -54,6 +54,10 @@ export interface Lead {
   hasAgency: boolean
   product_id?: string
   estimatedValue?: number
+  cnpj?: string
+  website?: string
+  instagram?: string
+  facebook?: string
 }
 
 export interface Message {
@@ -334,6 +338,10 @@ export const useDataStore = create<DataStore>((set, get) => ({
         estimatedValue: (lead as any).estimated_value
           ? Number((lead as any).estimated_value)
           : undefined,
+        cnpj: (lead as any).cnpj || '',
+        website: (lead as any).website || '',
+        instagram: (lead as any).instagram || '',
+        facebook: (lead as any).facebook || '',
         createdAt: lead.created_at,
         meetings: (meetingsData || [])
           .filter((m) => m.lead_id === lead.id)
@@ -511,6 +519,10 @@ export const useDataStore = create<DataStore>((set, get) => ({
       has_agency: lead.hasAgency,
       product_id: lead.product_id || null,
       estimated_value: lead.estimatedValue || 0,
+      cnpj: lead.cnpj || null,
+      website: lead.website || null,
+      instagram: lead.instagram || null,
+      facebook: lead.facebook || null,
     } as any
 
     const { data, error } = await supabase
@@ -597,6 +609,10 @@ export const useDataStore = create<DataStore>((set, get) => ({
       updatePayload.product_id = data.product_id
     if (data.estimatedValue !== undefined)
       updatePayload.estimated_value = data.estimatedValue
+    if (data.cnpj !== undefined) updatePayload.cnpj = data.cnpj
+    if (data.website !== undefined) updatePayload.website = data.website
+    if (data.instagram !== undefined) updatePayload.instagram = data.instagram
+    if (data.facebook !== undefined) updatePayload.facebook = data.facebook
 
     if (data.meetings && data.meetings.length > 0) {
       const currentLead = get().leads.find((l) => l.id === id)

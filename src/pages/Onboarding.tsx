@@ -134,10 +134,10 @@ export default function Onboarding() {
         companyName: customer?.company || lead?.company || '',
         phone: customer?.phone || lead?.phone || '',
         email: customer?.email || lead?.email || '',
-        cnpj: customer?.cnpj || '',
-        site: customer?.site || '',
-        instagram: customer?.instagram || '',
-        facebook: customer?.facebook || '',
+        cnpj: customer?.cnpj || lead?.cnpj || '',
+        site: customer?.site || lead?.website || '',
+        instagram: customer?.instagram || lead?.instagram || '',
+        facebook: customer?.facebook || lead?.facebook || '',
         serviceDescription: opp.service || '',
         marketingContext: lead?.objectives || '',
         opportunityValue: opp.value || 0,
@@ -526,9 +526,20 @@ export default function Onboarding() {
                     className="focus-visible:ring-[#227b50]"
                     placeholder="00.000.000/0001-00"
                     value={formData.cnpj}
-                    onChange={(e) =>
-                      setFormData({ ...formData, cnpj: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      let formatted = digits
+                      if (digits.length > 2 && digits.length <= 5) {
+                        formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`
+                      } else if (digits.length > 5 && digits.length <= 8) {
+                        formatted = `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`
+                      } else if (digits.length > 8 && digits.length <= 12) {
+                        formatted = `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`
+                      } else if (digits.length > 12) {
+                        formatted = `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`
+                      }
+                      setFormData({ ...formData, cnpj: formatted })
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -575,11 +586,18 @@ export default function Onboarding() {
                   </label>
                   <Input
                     className="focus-visible:ring-[#227b50]"
-                    placeholder="https://"
+                    placeholder="https://exemplo.com.br"
                     value={formData.site}
                     onChange={(e) =>
                       setFormData({ ...formData, site: e.target.value })
                     }
+                    onBlur={(e) => {
+                      let val = e.target.value.trim()
+                      if (val && !/^https?:\/\//i.test(val)) {
+                        val = 'https://' + val
+                        setFormData({ ...formData, site: val })
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -593,6 +611,23 @@ export default function Onboarding() {
                     onChange={(e) =>
                       setFormData({ ...formData, instagram: e.target.value })
                     }
+                    onBlur={(e) => {
+                      let val = e.target.value.trim()
+                      if (val) {
+                        const match = val.match(
+                          /(?:instagram\.com\/)([A-Za-z0-9_.]+)/,
+                        )
+                        if (match) {
+                          val = '@' + match[1]
+                        } else if (
+                          !val.startsWith('@') &&
+                          !val.startsWith('http')
+                        ) {
+                          val = '@' + val
+                        }
+                        setFormData({ ...formData, instagram: val })
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -601,11 +636,24 @@ export default function Onboarding() {
                   </label>
                   <Input
                     className="focus-visible:ring-[#227b50]"
-                    placeholder="/empresa"
+                    placeholder="https://facebook.com/empresa"
                     value={formData.facebook}
                     onChange={(e) =>
                       setFormData({ ...formData, facebook: e.target.value })
                     }
+                    onBlur={(e) => {
+                      let val = e.target.value.trim()
+                      if (val) {
+                        if (/^https?:\/\//i.test(val)) {
+                          // valid
+                        } else if (/^(www\.)?facebook\.com/i.test(val)) {
+                          val = 'https://' + val
+                        } else {
+                          val = 'https://facebook.com/' + val.replace(/^\//, '')
+                        }
+                        setFormData({ ...formData, facebook: val })
+                      }
+                    }}
                   />
                 </div>
               </div>

@@ -226,30 +226,38 @@ export default function Leads() {
       payload.product_id = formData.product_id
     }
 
-    payload.estimatedValue = formData.oppValue ? Number(formData.oppValue) : 0
+    payload.estimatedValue = formData.oppValue
+      ? Number(formData.oppValue.replace(/\D/g, '')) / 100
+      : 0
 
-    await addLead(payload)
-
-    setIsOpen(false)
-    setFormData({
-      contact: '',
-      company: '',
-      email: '',
-      phone: '',
-      city: '',
-      status: 'Novo',
-      country: 'Brazil',
-      origin: 'Manual',
-      serviceType: 'Fee Mensal',
-      serviceName: '',
-      oppValue: '',
-      marketingStatus: '',
-      objectives: '',
-      notes: '',
-      investsInMkt: false,
-      hasAgency: false,
-      product_id: '',
-    })
+    try {
+      await addLead(payload)
+      setIsOpen(false)
+      toast.success('Lead salvo com sucesso!')
+      setFormData({
+        contact: '',
+        company: '',
+        email: '',
+        phone: '',
+        city: '',
+        status: 'Novo',
+        country: 'Brazil',
+        origin: 'Manual',
+        serviceType: 'Fee Mensal',
+        serviceName: '',
+        oppValue: '',
+        marketingStatus: '',
+        objectives: '',
+        notes: '',
+        investsInMkt: false,
+        hasAgency: false,
+        product_id: '',
+      })
+    } catch (err: any) {
+      toast.error('Erro ao salvar lead', {
+        description: err.message || 'Verifique os campos e tente novamente.',
+      })
+    }
   }
 
   const handleAddMeeting = () => {
@@ -491,7 +499,10 @@ export default function Leads() {
                         ...formData,
                         product_id: v,
                         oppValue: prod
-                          ? prod.price.toString()
+                          ? new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(prod.price)
                           : formData.oppValue,
                       })
                     }}
@@ -536,16 +547,24 @@ export default function Leads() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">
-                    Valor Estimado (R$)
-                  </label>
+                  <label className="text-sm font-medium">Valor Estimado</label>
                   <Input
-                    type="number"
+                    type="text"
                     value={formData.oppValue}
-                    onChange={(e) =>
-                      setFormData({ ...formData, oppValue: e.target.value })
-                    }
-                    placeholder="0.00"
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      const num = Number(digits) / 100
+                      if (!isNaN(num)) {
+                        setFormData({
+                          ...formData,
+                          oppValue: new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(num),
+                        })
+                      }
+                    }}
+                    placeholder="R$ 0,00"
                     disabled={!formData.product_id}
                   />
                 </div>
@@ -1544,19 +1563,29 @@ export default function Leads() {
                   </Select>
                 </div>
                 <div className="col-span-1">
-                  <label className="text-sm font-medium">
-                    Valor Estimado (R$)
-                  </label>
+                  <label className="text-sm font-medium">Valor Estimado</label>
                   <Input
-                    type="number"
-                    value={editLead.estimatedValue || ''}
-                    onChange={(e) =>
-                      setEditLead({
-                        ...editLead,
-                        estimatedValue: Number(e.target.value),
-                      })
+                    type="text"
+                    value={
+                      editLead.estimatedValue !== undefined &&
+                      editLead.estimatedValue !== null
+                        ? new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(editLead.estimatedValue)
+                        : ''
                     }
-                    placeholder="0.00"
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      const num = Number(digits) / 100
+                      if (!isNaN(num)) {
+                        setEditLead({
+                          ...editLead,
+                          estimatedValue: num,
+                        })
+                      }
+                    }}
+                    placeholder="R$ 0,00"
                     disabled={!editLead.product_id}
                   />
                 </div>

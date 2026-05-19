@@ -513,11 +513,16 @@ export const useDataStore = create<DataStore>((set, get) => ({
       estimated_value: lead.estimatedValue || 0,
     } as any
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('leads')
       .insert(dbLead)
       .select()
       .single()
+
+    if (error) {
+      console.error('Supabase Error:', error)
+      throw error
+    }
 
     if (data) {
       const newLead: Lead = {

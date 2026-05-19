@@ -282,7 +282,7 @@ export default function Team() {
     <div className="space-y-6 animate-fade-in pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20">
+          <div className="p-3 bg-[#227b50] text-white rounded-xl shadow-lg shadow-[#227b50]/20">
             <UserCog className="w-6 h-6" />
           </div>
           <div>
@@ -296,7 +296,7 @@ export default function Team() {
         </div>
         <Button
           onClick={() => handleOpenDialog()}
-          className="bg-red-600 hover:bg-red-700"
+          className="bg-[#227b50] hover:bg-[#1a5c3c]"
         >
           <Plus className="w-4 h-4 mr-2" />
           Novo Usuário
@@ -353,7 +353,7 @@ export default function Team() {
                             className="w-9 h-9 rounded-full object-cover shadow-sm shrink-0"
                           />
                         ) : (
-                          <div className="w-9 h-9 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-[#227b50]/10 text-[#227b50] flex items-center justify-center text-xs font-bold shrink-0">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -377,8 +377,8 @@ export default function Team() {
                         className={cn(
                           'inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset',
                           user.role === 'ADMIN'
-                            ? 'bg-rose-50 text-rose-700 ring-rose-600/10'
-                            : 'bg-red-50 text-red-700 ring-red-600/10',
+                            ? 'bg-[#227b50]/10 text-[#227b50] ring-[#227b50]/20'
+                            : 'bg-gray-100 text-gray-700 ring-gray-600/10',
                         )}
                       >
                         {user.role === 'ADMIN' ? (
@@ -483,7 +483,7 @@ export default function Team() {
             </h2>
 
             <div className="flex flex-col items-center justify-center mb-6">
-              <div className="relative w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-red-500 transition-colors group cursor-pointer shadow-sm">
+              <div className="relative w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-[#227b50] transition-colors group cursor-pointer shadow-sm">
                 {avatarPreview ? (
                   <img
                     src={avatarPreview}
@@ -491,7 +491,7 @@ export default function Team() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <UserCog className="w-8 h-8 text-gray-400 group-hover:text-red-500 transition-colors" />
+                  <UserCog className="w-8 h-8 text-gray-400 group-hover:text-[#227b50] transition-colors" />
                 )}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Camera className="w-6 h-6 text-white" />
@@ -591,7 +591,7 @@ export default function Team() {
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-red-600 hover:bg-red-700 min-w-[100px]"
+                className="bg-[#227b50] hover:bg-[#1a5c3c] min-w-[100px]"
               >
                 {isSaving ? 'Salvando...' : 'Salvar'}
               </Button>

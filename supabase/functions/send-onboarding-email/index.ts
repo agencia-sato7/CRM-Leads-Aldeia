@@ -21,7 +21,7 @@ Deno.serve(async (req: Request) => {
 
     const htmlTemplate = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-        <div style="background-color: #dc2626; padding: 20px; text-align: center; color: white;">
+        <div style="background-color: #227b50; padding: 20px; text-align: center; color: white;">
           <h1 style="margin: 0; font-size: 24px;">Novo Onboarding Registrado 🚀</h1>
         </div>
         <div style="padding: 24px; background-color: #ffffff;">

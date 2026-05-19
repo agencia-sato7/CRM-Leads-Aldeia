@@ -161,7 +161,7 @@ export default function Opportunities() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20">
+          <div className="p-3 bg-[#227b50] text-white rounded-xl shadow-lg shadow-[#227b50]/20">
             <Handshake className="w-6 h-6" />
           </div>
           <div>
@@ -191,7 +191,7 @@ export default function Opportunities() {
           }}
         >
           <DialogTrigger asChild>
-            <Button className="bg-red-600 hover:bg-red-700 text-white rounded-full px-6 shadow-md shadow-red-600/20">
+            <Button className="bg-[#227b50] hover:bg-[#1a5c3c] text-white rounded-full px-6 shadow-md shadow-[#227b50]/20">
               <Plus className="w-4 h-4 mr-2" /> Nova Oportunidade
             </Button>
           </DialogTrigger>
@@ -237,7 +237,7 @@ export default function Opportunities() {
                         .map((l) => (
                           <div
                             key={l.id}
-                            className="px-3 py-2 hover:bg-red-50 rounded cursor-pointer text-sm transition-colors"
+                            className="px-3 py-2 hover:bg-[#227b50]/10 rounded cursor-pointer text-sm transition-colors"
                             onClick={() => {
                               let serviceName = ''
                               let oppType: OppType = 'Fee Mensal'
@@ -429,7 +429,7 @@ export default function Opportunities() {
               <DialogFooter className="mt-6">
                 <Button
                   type="submit"
-                  className="bg-red-600 text-white w-full hover:bg-red-700 h-11 text-base"
+                  className="bg-[#227b50] text-white w-full hover:bg-[#1a5c3c] h-11 text-base"
                 >
                   Salvar Oportunidade
                 </Button>
@@ -442,7 +442,7 @@ export default function Opportunities() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         {visibleOpps.length === 0 ? (
           <div className="py-12 text-center flex flex-col items-center justify-center">
-            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-[#227b50]/10 text-[#227b50] rounded-full flex items-center justify-center mb-4">
               <Inbox className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">
@@ -455,7 +455,7 @@ export default function Opportunities() {
             <Button
               onClick={() => setIsOpen(true)}
               variant="outline"
-              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="border-[#227b50]/30 text-[#227b50] hover:bg-[#227b50]/10 hover:text-[#1a5c3c]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Oportunidade

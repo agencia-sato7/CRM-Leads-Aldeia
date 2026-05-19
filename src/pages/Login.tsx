@@ -32,10 +32,10 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-down">
-        <div className="flex justify-center text-red-600">
+        <div className="flex justify-center text-[#227b50]">
           <ShieldCheck className="w-12 h-12" />
         </div>
-        <h2 className="mt-6 text-center text-4xl font-extrabold text-red-600 tracking-tighter">
+        <h2 className="mt-6 text-center text-4xl font-extrabold text-[#227b50] tracking-tighter">
           S7SALES
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
@@ -85,7 +85,7 @@ export default function Login() {
               <div className="text-sm">
                 <Link
                   to="/forgot-password"
-                  className="font-medium text-red-600 hover:text-red-500 transition-colors"
+                  className="font-medium text-[#227b50] hover:text-[#1a5c3c] transition-colors"
                 >
                   Esqueceu sua senha?
                 </Link>
@@ -95,7 +95,7 @@ export default function Login() {
             <div>
               <Button
                 type="submit"
-                className="w-full h-11 text-base bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md transition-all"
+                className="w-full h-11 text-base bg-[#227b50] hover:bg-[#1a5c3c] text-white rounded-xl shadow-md transition-all"
               >
                 Entrar no Sistema
               </Button>

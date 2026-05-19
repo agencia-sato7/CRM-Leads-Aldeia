@@ -9,7 +9,7 @@ export default function Admin() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20">
+          <div className="p-3 bg-[#227b50] text-white rounded-xl shadow-lg shadow-[#227b50]/20">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>

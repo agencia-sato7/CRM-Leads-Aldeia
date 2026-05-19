@@ -27,7 +27,14 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
+    if (
+      !SUPABASE_URL ||
+      !SUPABASE_SERVICE_ROLE_KEY ||
+      !SMTP_HOST ||
+      !SMTP_USER ||
+      !SMTP_PASS ||
+      !SMTP_FROM
+    ) {
       throw new Error('Missing environment variables (SMTP or Supabase)')
     }
 
@@ -74,7 +81,7 @@ Deno.serve(async (req: Request) => {
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb;">
-          <h1 style="color: #dc2626; margin: 0; font-size: 28px; letter-spacing: -0.5px;">Aldeia Acabamentos</h1>
+          <h1 style="color: #227b50; margin: 0; font-size: 28px; letter-spacing: -0.5px;">Aldeia Acabamentos</h1>
         </div>
         
         <h2 style="color: #111827; font-size: 20px; margin-top: 0;">Olá,</h2>
@@ -88,13 +95,13 @@ Deno.serve(async (req: Request) => {
         </p>
         
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${actionLink}" style="background-color: #dc2626; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block;">Redefinir minha senha</a>
+          <a href="${actionLink}" style="background-color: #227b50; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block;">Redefinir minha senha</a>
         </div>
         
         <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">
           Ou copie e cole o link abaixo no seu navegador:
           <br>
-          <a href="${actionLink}" style="color: #dc2626; word-break: break-all; font-size: 14px;">${actionLink}</a>
+          <a href="${actionLink}" style="color: #227b50; word-break: break-all; font-size: 14px;">${actionLink}</a>
         </p>
 
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">

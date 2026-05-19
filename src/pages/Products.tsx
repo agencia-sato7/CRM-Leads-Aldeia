@@ -56,7 +56,7 @@ export default function Products() {
   const [filterCategory, setFilterCategory] = useState('all')
 
   const [page, setPage] = useState(1)
-  const pageSize = 15
+  const pageSize = 10
   const [serverProducts, setServerProducts] = useState<Product[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)

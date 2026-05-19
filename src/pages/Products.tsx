@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   PackageSearch,
   Plus,
@@ -8,6 +8,8 @@ import {
   Tags,
   Building2,
   FolderOpen,
+  LayoutGrid,
+  List,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 export default function Products() {
   const {
@@ -47,6 +50,15 @@ export default function Products() {
   const [search, setSearch] = useState('')
   const [filterBrand, setFilterBrand] = useState('all')
   const [filterCategory, setFilterCategory] = useState('all')
+
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
+    const saved = localStorage.getItem('@crm:product-view-mode')
+    return saved === 'table' || saved === 'cards' ? saved : 'cards'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('@crm:product-view-mode', viewMode)
+  }, [viewMode])
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -217,6 +229,34 @@ export default function Products() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'h-8 w-8 rounded-md transition-all',
+                viewMode === 'cards'
+                  ? 'bg-white shadow-sm text-[#227b50]'
+                  : 'text-gray-500 hover:text-gray-700',
+              )}
+              onClick={() => setViewMode('cards')}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'h-8 w-8 rounded-md transition-all',
+                viewMode === 'table'
+                  ? 'bg-white shadow-sm text-[#227b50]'
+                  : 'text-gray-500 hover:text-gray-700',
+              )}
+              onClick={() => setViewMode('table')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
           <Button
             variant="outline"
             onClick={() => setIsCategoryModalOpen(true)}
@@ -283,106 +323,209 @@ export default function Products() {
         </div>
 
         <div className="p-4 sm:p-6 bg-gray-50/30">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredProducts.map((p) => {
-              const brand = brands.find((b) => b.id === p.brandId)
-              const category = productCategories.find(
-                (c) => c.id === p.categoryId,
-              )
-              const terms = p.searchTerms
-                .split(',')
-                .map((t) => t.trim())
-                .filter(Boolean)
-              return (
-                <div
-                  key={p.id}
-                  className="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all duration-200 group flex flex-col"
-                >
-                  <div className="p-4 pb-3 bg-gray-50/80 border-b border-gray-100 flex flex-row items-start justify-between">
-                    <div>
-                      <div className="text-[10px] font-bold text-[#227b50] mb-1 uppercase tracking-wider flex flex-col gap-0.5">
-                        <span>{brand?.name || 'Sem Marca'}</span>
-                        {category && (
-                          <span className="text-gray-500 font-medium">
-                            {category.name}
-                          </span>
-                        )}
-                      </div>
-                      <h3
-                        className="text-base font-semibold leading-tight text-gray-900 line-clamp-2"
-                        title={p.name}
-                      >
-                        {p.name}
-                      </h3>
-                      <div className="mt-1.5 font-medium text-sm text-[#227b50]">
-                        {p.price > 0
-                          ? new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL',
-                            }).format(p.price)
-                          : 'Sob Consulta'}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-gray-500 hover:text-[#227b50] bg-white shadow-sm border border-gray-200"
-                        onClick={() => handleOpenProductModal(p)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-gray-500 hover:text-red-600 bg-white shadow-sm border border-gray-200"
-                        onClick={() =>
-                          setDeleteConfirm({ id: p.id, type: 'product' })
-                        }
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <div className="flex items-start gap-2 text-sm text-gray-600 flex-1">
-                      <Tags className="w-4 h-4 mt-0.5 text-gray-400 shrink-0" />
-                      <div className="flex flex-wrap gap-1.5">
-                        {terms.length > 0 ? (
-                          terms.map((t, i) => (
-                            <span
-                              key={i}
-                              className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200"
-                            >
-                              {t}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-gray-400 italic text-xs">
-                            Sem termos cadastrados
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-
-            {filteredProducts.length === 0 && (
-              <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                  <PackageSearch className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">
-                  Nenhum produto encontrado
-                </h3>
-                <p className="text-gray-500 max-w-sm">
-                  Tente ajustar seus filtros de busca ou crie um novo produto.
-                </p>
+          {filteredProducts.length === 0 ? (
+            <div className="py-16 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <PackageSearch className="w-8 h-8 text-gray-400" />
               </div>
-            )}
-          </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">
+                Nenhum produto encontrado
+              </h3>
+              <p className="text-gray-500 max-w-sm">
+                Tente ajustar seus filtros de busca ou crie um novo produto.
+              </p>
+            </div>
+          ) : viewMode === 'cards' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredProducts.map((p) => {
+                const brand = brands.find((b) => b.id === p.brandId)
+                const category = productCategories.find(
+                  (c) => c.id === p.categoryId,
+                )
+                const terms = p.searchTerms
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+                return (
+                  <div
+                    key={p.id}
+                    className="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all duration-200 group flex flex-col"
+                  >
+                    <div className="p-4 pb-3 bg-gray-50/80 border-b border-gray-100 flex flex-row items-start justify-between">
+                      <div>
+                        <div className="text-[10px] font-bold text-[#227b50] mb-1 uppercase tracking-wider flex flex-col gap-0.5">
+                          <span>{brand?.name || 'Sem Marca'}</span>
+                          {category && (
+                            <span className="text-gray-500 font-medium">
+                              {category.name}
+                            </span>
+                          )}
+                        </div>
+                        <h3
+                          className="text-base font-semibold leading-tight text-gray-900 line-clamp-2"
+                          title={p.name}
+                        >
+                          {p.name}
+                        </h3>
+                        <div className="mt-1.5 font-medium text-sm text-[#227b50]">
+                          {p.price > 0
+                            ? new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(p.price)
+                            : 'Sob Consulta'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-gray-500 hover:text-[#227b50] bg-white shadow-sm border border-gray-200"
+                          onClick={() => handleOpenProductModal(p)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-gray-500 hover:text-red-600 bg-white shadow-sm border border-gray-200"
+                          onClick={() =>
+                            setDeleteConfirm({ id: p.id, type: 'product' })
+                          }
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="flex items-start gap-2 text-sm text-gray-600 flex-1">
+                        <Tags className="w-4 h-4 mt-0.5 text-gray-400 shrink-0" />
+                        <div className="flex flex-wrap gap-1.5">
+                          {terms.length > 0 ? (
+                            terms.map((t, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200"
+                              >
+                                {t}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-gray-400 italic text-xs">
+                              Sem termos cadastrados
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-gray-200/60 bg-white">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50/80 border-b border-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold text-[#227b50]">
+                      Produto
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[#227b50]">
+                      Marca
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[#227b50]">
+                      Categoria
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[#227b50]">
+                      Preço
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[#227b50]">
+                      Termos
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[#227b50] text-right">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredProducts.map((p) => {
+                    const brand = brands.find((b) => b.id === p.brandId)
+                    const category = productCategories.find(
+                      (c) => c.id === p.categoryId,
+                    )
+                    const terms = p.searchTerms
+                      .split(',')
+                      .map((t) => t.trim())
+                      .filter(Boolean)
+                    return (
+                      <tr
+                        key={p.id}
+                        className="hover:bg-gray-50/50 transition-colors group"
+                      >
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {p.name}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {brand?.name || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {category?.name || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-[#227b50] font-medium whitespace-nowrap">
+                          {p.price > 0
+                            ? new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(p.price)
+                            : 'Sob Consulta'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {terms.length > 0 ? (
+                              terms.map((t, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 border border-gray-200"
+                                >
+                                  {t}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-gray-400 italic text-xs">
+                                Nenhum
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-500 hover:text-[#227b50] bg-white shadow-sm border border-gray-200"
+                              onClick={() => handleOpenProductModal(p)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-500 hover:text-red-600 bg-white shadow-sm border border-gray-200"
+                              onClick={() =>
+                                setDeleteConfirm({ id: p.id, type: 'product' })
+                              }
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

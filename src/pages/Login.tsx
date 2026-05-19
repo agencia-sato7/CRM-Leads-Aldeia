@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ShieldCheck } from 'lucide-react'
+import logoUrl from '../assets/logo-dtosb2yn-402dc.png'
 
 export default function Login() {
   const [email, setEmail] = useState('diretor@sato7.com.br')
@@ -32,13 +32,14 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-down">
-        <div className="flex justify-center text-[#227b50]">
-          <ShieldCheck className="w-12 h-12" />
+        <div className="flex justify-center">
+          <img
+            src={logoUrl}
+            alt="Aldeia Acabamentos"
+            className="h-24 w-auto object-contain"
+          />
         </div>
-        <h2 className="mt-6 text-center text-4xl font-extrabold text-[#227b50] tracking-tighter">
-          S7SALES
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <p className="mt-4 text-center text-sm text-gray-600">
           Acesso seguro ao painel comercial e gestão B2B
         </p>
       </div>

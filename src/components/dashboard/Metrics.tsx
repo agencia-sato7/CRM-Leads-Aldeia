@@ -1,5 +1,5 @@
 import { useDataStore } from '@/stores/use-data-store'
-import { DollarSign, Target, CalendarDays, ArrowDownRight } from 'lucide-react'
+import { Wallet, Target, CalendarDays, ArrowDownRight } from 'lucide-react'
 
 export function Metrics({
   region,
@@ -43,15 +43,15 @@ export function Metrics({
 
   const formatValue = (v: number) =>
     new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(v)
 
   const cards = [
     {
-      title: 'Valor Fechado',
+      title: 'Orçamentos Fechados',
       value: formatValue(wonVal),
-      icon: DollarSign,
+      icon: Wallet,
       color: 'text-emerald-600',
       bg: 'bg-emerald-100',
       trend: 'Receita garantida',

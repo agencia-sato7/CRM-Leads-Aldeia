@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AdminPanel } from '@/components/admin/AdminPanel'
 import { AdminRepository } from '@/components/admin/AdminRepository'
 import { AdminAccount } from '@/components/admin/AdminAccount'
+import { RevenueChart } from '@/components/dashboard/RevenueChart'
 
 export default function Admin() {
   return (
@@ -34,7 +35,8 @@ export default function Admin() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="panel" className="outline-none">
+        <TabsContent value="panel" className="outline-none space-y-6">
+          <RevenueChart />
           <AdminPanel />
         </TabsContent>
 

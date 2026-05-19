@@ -62,8 +62,8 @@ export function HighTicketLeads({ region, userId, startDate, endDate }: any) {
                 <div className="text-right">
                   <div className="font-bold text-gray-900 text-base">
                     {new Intl.NumberFormat('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
                     }).format(opp.value)}
                   </div>
                   <Badge

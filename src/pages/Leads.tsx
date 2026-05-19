@@ -382,7 +382,7 @@ export default function Leads() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20">
+          <div className="p-3 bg-[#227b50] text-white rounded-xl shadow-lg shadow-[#227b50]/20">
             <Users className="w-6 h-6" />
           </div>
           <div>
@@ -396,7 +396,7 @@ export default function Leads() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-red-600 hover:bg-red-700 text-white rounded-full px-6 shadow-md shadow-red-600/20">
+            <Button className="bg-[#227b50] hover:bg-[#1a5c3c] text-white rounded-full px-6 shadow-md shadow-[#227b50]/20">
               <Plus className="w-4 h-4 mr-2" /> Novo Lead
             </Button>
           </DialogTrigger>
@@ -585,7 +585,7 @@ export default function Leads() {
                   <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
                     <input
                       type="checkbox"
-                      className="rounded text-red-600 focus:ring-red-500 w-4 h-4"
+                      className="rounded text-[#227b50] focus:ring-[#227b50] w-4 h-4"
                       checked={formData.investsInMkt}
                       onChange={(e) =>
                         setFormData({
@@ -599,7 +599,7 @@ export default function Leads() {
                   <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
                     <input
                       type="checkbox"
-                      className="rounded text-red-600 focus:ring-red-500 w-4 h-4"
+                      className="rounded text-[#227b50] focus:ring-[#227b50] w-4 h-4"
                       checked={formData.hasAgency}
                       onChange={(e) =>
                         setFormData({
@@ -615,7 +615,7 @@ export default function Leads() {
               <DialogFooter className="mt-6 pt-4 border-t border-gray-100">
                 <Button
                   type="submit"
-                  className="bg-red-600 hover:bg-red-700 text-white w-full"
+                  className="bg-[#227b50] hover:bg-[#1a5c3c] text-white w-full"
                   disabled={(() => {
                     if (
                       !formData.company.trim() ||
@@ -749,7 +749,7 @@ export default function Leads() {
 
         {filteredLeads.length === 0 ? (
           <div className="py-12 text-center flex flex-col items-center justify-center">
-            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-[#227b50]/10 text-[#227b50] rounded-full flex items-center justify-center mb-4">
               <Inbox className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">
@@ -762,7 +762,7 @@ export default function Leads() {
             <Button
               onClick={() => setIsOpen(true)}
               variant="outline"
-              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="border-[#227b50]/30 text-[#227b50] hover:bg-[#227b50]/10 hover:text-[#1a5c3c]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Lead
@@ -1192,7 +1192,7 @@ export default function Leads() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setEditLead(lead)}
-                              className="text-gray-500 hover:text-red-600 h-8 px-2"
+                              className="text-gray-500 hover:text-[#227b50] h-8 px-2"
                               title="Editar"
                             >
                               <Edit3 className="w-4 h-4" />
@@ -1256,7 +1256,7 @@ export default function Leads() {
               Cancelar
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-[#227b50] hover:bg-[#1a5c3c] text-white"
               onClick={handleScheduleMeeting}
               disabled={!scheduleFormData.date}
             >
@@ -1824,7 +1824,7 @@ export default function Leads() {
                   updateLead(editLead.id, editLead)
                   setEditLead(null)
                 }}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                className="w-full bg-[#227b50] hover:bg-[#1a5c3c] text-white"
                 disabled={(() => {
                   if (
                     !editLead.company.trim() ||

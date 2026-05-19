@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import {
   PackageSearch,
   Plus,
@@ -10,6 +10,9 @@ import {
   FolderOpen,
   LayoutGrid,
   List,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,10 +34,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase/client'
 
 export default function Products() {
   const {
-    products,
     brands,
     productCategories,
     addProduct,
@@ -48,8 +51,16 @@ export default function Products() {
   const { toast } = useToast()
 
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterBrand, setFilterBrand] = useState('all')
   const [filterCategory, setFilterCategory] = useState('all')
+
+  const [page, setPage] = useState(1)
+  const pageSize = 15
+  const [serverProducts, setServerProducts] = useState<Product[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
     const saved = localStorage.getItem('@crm:product-view-mode')
@@ -82,17 +93,68 @@ export default function Products() {
     type: 'product' | 'brand' | 'category'
   } | null>(null)
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      const matchSearch =
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.searchTerms.toLowerCase().includes(search.toLowerCase())
-      const matchBrand = filterBrand === 'all' || p.brandId === filterBrand
-      const matchCategory =
-        filterCategory === 'all' || p.categoryId === filterCategory
-      return matchSearch && matchBrand && matchCategory
-    })
-  }, [products, search, filterBrand, filterCategory])
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, filterBrand, filterCategory])
+
+  const fetchPaginatedProducts = async () => {
+    setIsLoading(true)
+    try {
+      let query = supabase.from('products').select('*', { count: 'exact' })
+
+      if (debouncedSearch) {
+        query = query.or(
+          `name.ilike.%${debouncedSearch}%,search_terms.ilike.%${debouncedSearch}%`,
+        )
+      }
+      if (filterBrand !== 'all') {
+        query = query.eq('brand_id', filterBrand)
+      }
+      if (filterCategory !== 'all') {
+        query = query.eq('category_id', filterCategory)
+      }
+
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+
+      const { data, count, error } = await query
+        .order('name', { ascending: true })
+        .range(from, to)
+
+      if (error) throw error
+
+      const mapped: Product[] = (data || []).map((p) => ({
+        id: p.id,
+        brandId: p.brand_id || '',
+        categoryId: p.category_id || undefined,
+        name: p.name,
+        searchTerms: p.search_terms || '',
+        price: Number(p.price || 0),
+        createdAt: p.created_at,
+      }))
+
+      setServerProducts(mapped)
+      setTotalCount(count || 0)
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao buscar produtos',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPaginatedProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearch, filterBrand, filterCategory])
 
   const handleOpenProductModal = (product?: Product) => {
     if (product) {
@@ -146,6 +208,7 @@ export default function Products() {
         toast({ title: 'Sucesso', description: 'Produto cadastrado' })
       }
       setIsProductModalOpen(false)
+      fetchPaginatedProducts()
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -207,6 +270,7 @@ export default function Products() {
         })
       }
       setDeleteConfirm(null)
+      fetchPaginatedProducts()
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -323,7 +387,14 @@ export default function Products() {
         </div>
 
         <div className="p-4 sm:p-6 bg-gray-50/30">
-          {filteredProducts.length === 0 ? (
+          {isLoading ? (
+            <div className="py-16 flex flex-col items-center justify-center text-center">
+              <Loader2 className="w-8 h-8 text-[#227b50] animate-spin mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">
+                Carregando produtos...
+              </h3>
+            </div>
+          ) : serverProducts.length === 0 ? (
             <div className="py-16 flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                 <PackageSearch className="w-8 h-8 text-gray-400" />
@@ -337,7 +408,7 @@ export default function Products() {
             </div>
           ) : viewMode === 'cards' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredProducts.map((p) => {
+              {serverProducts.map((p) => {
                 const brand = brands.find((b) => b.id === p.brandId)
                 const category = productCategories.find(
                   (c) => c.id === p.categoryId,
@@ -448,7 +519,7 @@ export default function Products() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredProducts.map((p) => {
+                  {serverProducts.map((p) => {
                     const brand = brands.find((b) => b.id === p.brandId)
                     const category = productCategories.find(
                       (c) => c.id === p.categoryId,
@@ -524,6 +595,47 @@ export default function Products() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!isLoading && serverProducts.length > 0 && (
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200/60 pt-4">
+              <div className="text-sm text-gray-500">
+                Mostrando{' '}
+                <span className="font-medium text-gray-900">
+                  {(page - 1) * pageSize + 1}
+                </span>{' '}
+                a{' '}
+                <span className="font-medium text-gray-900">
+                  {Math.min(page * pageSize, totalCount)}
+                </span>{' '}
+                de{' '}
+                <span className="font-medium text-gray-900">{totalCount}</span>{' '}
+                produtos
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Anterior
+                </Button>
+                <div className="text-sm font-medium text-gray-700 px-2">
+                  Página {page} de {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || totalPages === 0}
+                >
+                  Próxima
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </div>

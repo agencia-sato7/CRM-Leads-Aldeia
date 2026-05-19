@@ -59,6 +59,7 @@ export default function Products() {
     brandId: '',
     categoryId: 'none',
     searchTerms: '',
+    price: 0,
   })
 
   const [brandName, setBrandName] = useState('')
@@ -89,6 +90,7 @@ export default function Products() {
         brandId: product.brandId,
         categoryId: product.categoryId || 'none',
         searchTerms: product.searchTerms,
+        price: product.price || 0,
       })
     } else {
       setEditingProduct(null)
@@ -97,6 +99,7 @@ export default function Products() {
         brandId: '',
         categoryId: 'none',
         searchTerms: '',
+        price: 0,
       })
     }
     setIsProductModalOpen(true)
@@ -120,6 +123,7 @@ export default function Products() {
             ? undefined
             : productForm.categoryId,
         searchTerms: productForm.searchTerms,
+        price: Number(productForm.price),
       }
 
       if (editingProduct) {
@@ -310,6 +314,14 @@ export default function Products() {
                       >
                         {p.name}
                       </h3>
+                      <div className="mt-1.5 font-medium text-sm text-[#227b50]">
+                        {p.price > 0
+                          ? new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(p.price)
+                          : 'Sob Consulta'}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                       <Button
@@ -430,6 +442,20 @@ export default function Products() {
                 value={productForm.name}
                 onChange={(e) =>
                   setProductForm({ ...productForm, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Preço Base</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={productForm.price}
+                onChange={(e) =>
+                  setProductForm({
+                    ...productForm,
+                    price: Number(e.target.value),
+                  })
                 }
               />
             </div>

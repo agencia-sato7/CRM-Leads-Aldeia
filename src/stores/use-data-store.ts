@@ -155,6 +155,7 @@ export interface Product {
   categoryId?: string
   name: string
   searchTerms: string
+  price: number
   createdAt: string
 }
 
@@ -445,6 +446,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         categoryId: p.category_id || undefined,
         name: p.name,
         searchTerms: p.search_terms || '',
+        price: Number(p.price || 0),
         createdAt: p.created_at,
       }))
 
@@ -1167,6 +1169,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       category_id: product.categoryId || null,
       name: product.name,
       search_terms: product.searchTerms,
+      price: product.price || 0,
     }
     const { data } = await supabase
       .from('products')
@@ -1180,6 +1183,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         categoryId: data.category_id || undefined,
         name: data.name,
         searchTerms: data.search_terms || '',
+        price: Number(data.price || 0),
         createdAt: data.created_at,
       }
       set((state) => ({
@@ -1200,6 +1204,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       updatePayload.category_id = data.categoryId || null
     if (data.searchTerms !== undefined)
       updatePayload.search_terms = data.searchTerms
+    if (data.price !== undefined) updatePayload.price = data.price
 
     if (Object.keys(updatePayload).length > 0) {
       await supabase.from('products').update(updatePayload).eq('id', id)

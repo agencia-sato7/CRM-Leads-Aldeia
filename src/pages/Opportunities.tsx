@@ -549,16 +549,4 @@ export default function Opportunities() {
                             <SelectItem value="Ganha">Ganha</SelectItem>
                             <SelectItem value="Perdida">Perdida</SelectItem>
                           </SelectContent>
-                        </Select>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-    </div>
-  )
-}
+              

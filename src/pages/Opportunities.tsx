@@ -519,6 +519,10 @@ export default function Opportunities() {
                               toast.success(
                                 'Parabéns! Cliente criado com sucesso a partir da oportunidade ganha',
                               )
+                            } else if (v === 'Perdida') {
+                              toast.info(
+                                'Oportunidade marcada como perdida e lead atualizado para Perdido.',
+                              )
                             }
                           }}
                         >

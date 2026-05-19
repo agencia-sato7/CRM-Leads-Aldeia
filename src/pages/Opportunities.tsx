@@ -129,8 +129,9 @@ export default function Opportunities() {
       value: Number(formData.value),
       status: formData.status,
       userId:
-        formData.userId || (currentUser.role === 'ADMIN' ? '' : currentUser.id),
-    })
+        formData.userId ||
+        (currentUser.role === 'ADMIN' ? null : currentUser.id),
+    } as any)
     setIsOpen(false)
     setFormData({
       leadId: '',
@@ -309,7 +310,10 @@ export default function Opportunities() {
                     </SelectTrigger>
                     <SelectContent>
                       {users
-                        ?.filter((u) => u.role === 'COMMERCIAL')
+                        ?.filter(
+                          (u) =>
+                            u.role === 'COMMERCIAL' || u.role === 'COMERCIAL',
+                        )
                         .map((u) => (
                           <SelectItem key={u.id} value={u.id}>
                             {u.name}

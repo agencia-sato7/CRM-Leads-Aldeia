@@ -147,7 +147,7 @@ export default function Resources() {
     <div className="space-y-6 animate-fade-in relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-600 text-white rounded-xl shadow-sm shadow-red-200/50">
+          <div className="p-3 bg-[#227b50] text-white rounded-xl shadow-sm shadow-[#227b50]/30">
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
@@ -163,7 +163,7 @@ export default function Resources() {
           {currentUser?.role === 'ADMIN' && (
             <Button
               onClick={openAddModal}
-              className="bg-red-600 hover:bg-red-700 text-white gap-2"
+              className="bg-[#227b50] hover:bg-[#1b6240] text-white gap-2"
             >
               <Plus className="w-4 h-4" /> Novo Material
             </Button>
@@ -180,7 +180,7 @@ export default function Resources() {
               className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col"
             >
               <div className="flex justify-between items-start mb-4">
-                <div className="p-3 bg-red-50 text-red-600 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-colors">
+                <div className="p-3 bg-[#227b50]/10 text-[#227b50] rounded-xl group-hover:bg-[#227b50] group-hover:text-white transition-colors">
                   <IconComponent className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
@@ -192,7 +192,7 @@ export default function Resources() {
               <div className="flex gap-2 w-full mt-auto pt-4 border-t border-gray-50">
                 <Button
                   variant="outline"
-                  className="flex-1 gap-2 text-gray-700 hover:text-red-600 hover:bg-red-50 border-gray-200"
+                  className="flex-1 gap-2 text-gray-700 hover:text-[#227b50] hover:bg-[#227b50]/10 border-gray-200"
                   asChild
                 >
                   <a
@@ -211,7 +211,7 @@ export default function Resources() {
                       size="icon"
                       onClick={() => openEditModal(item)}
                       title="Editar Material"
-                      className="text-gray-500 hover:text-red-600 hover:bg-red-50 border-gray-200"
+                      className="text-gray-500 hover:text-[#227b50] hover:bg-[#227b50]/10 border-gray-200"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -220,7 +220,7 @@ export default function Resources() {
                       size="icon"
                       onClick={() => confirmDelete(item.id)}
                       title="Excluir Material"
-                      className="text-gray-500 hover:text-red-600 hover:bg-red-50 border-gray-200"
+                      className="text-gray-500 hover:text-[#227b50] hover:bg-[#227b50]/10 border-gray-200"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -237,7 +237,7 @@ export default function Resources() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
           <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 animate-slide-up">
             <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 text-red-600">
+              <div className="w-12 h-12 rounded-full bg-[#227b50]/10 flex items-center justify-center mb-4 text-[#227b50]">
                 <AlertCircle className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">
@@ -256,8 +256,7 @@ export default function Resources() {
                   Cancelar
                 </Button>
                 <Button
-                  variant="destructive"
-                  className="flex-1"
+                  className="flex-1 bg-[#227b50] hover:bg-[#1b6240] text-white"
                   onClick={handleDelete}
                 >
                   Excluir
@@ -392,7 +391,7 @@ export default function Resources() {
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-[#227b50] hover:bg-[#1b6240] text-white"
                 >
                   Salvar
                 </Button>

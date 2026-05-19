@@ -261,21 +261,6 @@ export default function Leads() {
   }
 
   const handleAddMeeting = () => {
-    if (currentUser?.role === 'ADMIN') {
-      toast.error('Ação não permitida', {
-        description: (
-          <span className="text-black font-medium">
-            Apenas usuários comerciais podem registrar reuniões.
-          </span>
-        ),
-        style: {
-          backgroundColor: '#fef2f2',
-          color: '#000000',
-          borderColor: '#fecaca',
-        },
-      })
-      return
-    }
     if (!editLead || !newMeetingDate) return
     const updatedMeetings = [
       {
@@ -354,21 +339,6 @@ export default function Leads() {
   }
 
   const handleCancelMeeting = async (lead: Lead) => {
-    if (currentUser?.role === 'ADMIN') {
-      toast.error('Ação não permitida', {
-        description: (
-          <span className="text-black font-medium">
-            Apenas usuários comerciais podem cancelar reuniões.
-          </span>
-        ),
-        style: {
-          backgroundColor: '#fef2f2',
-          color: '#000000',
-          borderColor: '#fecaca',
-        },
-      })
-      return
-    }
     await updateLead(lead.id, {
       scheduledMeetingDate: '',
     })
@@ -1033,43 +1003,45 @@ export default function Leads() {
                       {lead.status === 'Perdido' ? (
                         <span className="text-gray-400 text-xs">-</span>
                       ) : !lead.scheduledMeetingDate ? (
-                        lead.status === 'Novo' &&
-                        currentUser.role !== 'ADMIN' &&
-                        (lead.userId === currentUser.id || !lead.userId) ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-[10px] h-7 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 px-2"
-                            onClick={() => {
-                              setScheduleLead(lead)
-                              setScheduleFormData({
-                                date: '',
-                                notes: lead.notes || '',
-                              })
-                            }}
-                          >
-                            <CalendarDays className="w-3 h-3 mr-1" />
-                            Agendar
-                          </Button>
-                        ) : (lead.status === 'Em Negociação' ||
-                            lead.status === 'Qualificado') &&
-                          lead.meetings.length > 0 ? (
-                          <Badge
-                            variant="outline"
-                            className="flex w-max gap-1 items-center shadow-none text-[10px] px-1.5 py-0 bg-green-50 text-green-700 border-green-200"
-                          >
-                            <CheckCircle2 className="w-3 h-3" />
-                            {format(
-                              new Date(
-                                [...lead.meetings].sort(
-                                  (a, b) =>
-                                    new Date(b.date).getTime() -
-                                    new Date(a.date).getTime(),
-                                )[0].date,
-                              ),
-                              'dd/MM/yy HH:mm',
+                        (currentUser.role === 'ADMIN' ||
+                          lead.userId === currentUser.id ||
+                          !lead.userId) &&
+                        lead.status !== 'Ganho' ? (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            {lead.meetings.length > 0 && (
+                              <Badge
+                                variant="outline"
+                                className="flex w-max gap-1 items-center shadow-none text-[10px] px-1.5 py-0 bg-green-50 text-green-700 border-green-200"
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                                {format(
+                                  new Date(
+                                    [...lead.meetings].sort(
+                                      (a, b) =>
+                                        new Date(b.date).getTime() -
+                                        new Date(a.date).getTime(),
+                                    )[0].date,
+                                  ),
+                                  'dd/MM/yy HH:mm',
+                                )}
+                              </Badge>
                             )}
-                          </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-[10px] h-7 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 px-2"
+                              onClick={() => {
+                                setScheduleLead(lead)
+                                setScheduleFormData({
+                                  date: '',
+                                  notes: lead.notes || '',
+                                })
+                              }}
+                            >
+                              <CalendarDays className="w-3 h-3 mr-1" />
+                              Agendar
+                            </Button>
+                          </div>
                         ) : (
                           <span className="text-gray-400 text-xs">-</span>
                         )
@@ -1092,8 +1064,9 @@ export default function Leads() {
                           </Badge>
                           <div className="flex items-center gap-1">
                             {new Date(lead.scheduledMeetingDate) < new Date() &&
-                            currentUser.role !== 'ADMIN' &&
-                            (lead.userId === currentUser.id || !lead.userId) ? (
+                            (currentUser.role === 'ADMIN' ||
+                              lead.userId === currentUser.id ||
+                              !lead.userId) ? (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1113,9 +1086,9 @@ export default function Leads() {
                                 Reagendar
                               </Button>
                             ) : null}
-                            {currentUser.role !== 'ADMIN' &&
-                              (lead.userId === currentUser.id ||
-                                !lead.userId) &&
+                            {(currentUser.role === 'ADMIN' ||
+                              lead.userId === currentUser.id ||
+                              !lead.userId) &&
                               new Date(lead.scheduledMeetingDate) >=
                                 new Date() && (
                                 <>
@@ -1480,21 +1453,6 @@ export default function Leads() {
                       editLead.scheduledMeetingDate?.substring(0, 16) || ''
                     }
                     onChange={(e) => {
-                      if (currentUser?.role === 'ADMIN') {
-                        toast.error('Ação não permitida', {
-                          description: (
-                            <span className="text-black font-medium">
-                              Apenas usuários comerciais podem agendar reuniões.
-                            </span>
-                          ),
-                          style: {
-                            backgroundColor: '#fef2f2',
-                            color: '#000000',
-                            borderColor: '#fecaca',
-                          },
-                        })
-                        return
-                      }
                       setEditLead({
                         ...editLead,
                         scheduledMeetingDate: e.target.value,

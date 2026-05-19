@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase/client'
-import { useDataStore } from '@/stores/use-data-store'
 import { Loader2 } from 'lucide-react'
+import { usePermissions } from '@/hooks/use-permissions'
+import { useDataStore } from '@/stores/use-data-store'
 
 export function RequirePermission({
   children,
@@ -12,53 +11,9 @@ export function RequirePermission({
   resource: string
 }) {
   const { currentUser } = useDataStore()
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null)
+  const { canRead, loading } = usePermissions(resource)
 
-  useEffect(() => {
-    async function checkPermission() {
-      if (!currentUser) return
-
-      if (currentUser.role === 'ADMIN') {
-        setHasPermission(true)
-        return
-      }
-
-      try {
-        const { data: roleData } = await supabase
-          .from('roles')
-          .select('id')
-          .ilike('name', currentUser.role)
-          .maybeSingle()
-
-        if (roleData) {
-          const { data: permData } = await supabase
-            .from('role_permissions')
-            .select('can_read')
-            .eq('role_id', roleData.id)
-            .in('resource', [
-              resource,
-              resource.replace('-', '_'),
-              resource.replace('_', '-'),
-            ])
-
-          if (permData && permData.length > 0) {
-            setHasPermission(permData.some((p) => p.can_read === true))
-          } else {
-            setHasPermission(false)
-          }
-        } else {
-          setHasPermission(false)
-        }
-      } catch (error) {
-        console.error('Error checking permission:', error)
-        setHasPermission(false)
-      }
-    }
-
-    checkPermission()
-  }, [currentUser, resource])
-
-  if (!currentUser || hasPermission === null) {
+  if (!currentUser || loading) {
     return (
       <div className="flex h-full w-full items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -66,7 +21,7 @@ export function RequirePermission({
     )
   }
 
-  if (!hasPermission) {
+  if (!canRead) {
     return <Navigate to="/" replace />
   }
 

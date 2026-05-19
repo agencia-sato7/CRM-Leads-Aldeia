@@ -35,8 +35,10 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase/client'
+import { usePermissions } from '@/hooks/use-permissions'
 
 export default function Products() {
+  const { canCreate, canUpdate, canDelete } = usePermissions('products')
   const {
     brands,
     productCategories,
@@ -321,29 +323,35 @@ export default function Products() {
               <List className="w-4 h-4" />
             </Button>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="border-[#227b50] text-[#227b50] hover:bg-[#227b50]/10"
-          >
-            <FolderOpen className="w-4 h-4 mr-2" />
-            Gerenciar Categorias
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setIsBrandModalOpen(true)}
-            className="border-[#227b50] text-[#227b50] hover:bg-[#227b50]/10"
-          >
-            <Building2 className="w-4 h-4 mr-2" />
-            Gerenciar Marcas
-          </Button>
-          <Button
-            onClick={() => handleOpenProductModal()}
-            className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Produto
-          </Button>
+          {(canCreate || canDelete) && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsCategoryModalOpen(true)}
+                className="border-[#227b50] text-[#227b50] hover:bg-[#227b50]/10"
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Gerenciar Categorias
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsBrandModalOpen(true)}
+                className="border-[#227b50] text-[#227b50] hover:bg-[#227b50]/10"
+              >
+                <Building2 className="w-4 h-4 mr-2" />
+                Gerenciar Marcas
+              </Button>
+            </>
+          )}
+          {canCreate && (
+            <Button
+              onClick={() => handleOpenProductModal()}
+              className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Produto
+            </Button>
+          )}
         </div>
       </div>
 
@@ -448,24 +456,28 @@ export default function Products() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-gray-500 hover:text-[#227b50] bg-white shadow-sm border border-gray-200"
-                          onClick={() => handleOpenProductModal(p)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-gray-500 hover:text-red-600 bg-white shadow-sm border border-gray-200"
-                          onClick={() =>
-                            setDeleteConfirm({ id: p.id, type: 'product' })
-                          }
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        {canUpdate && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-gray-500 hover:text-[#227b50] bg-white shadow-sm border border-gray-200"
+                            onClick={() => handleOpenProductModal(p)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-gray-500 hover:text-red-600 bg-white shadow-sm border border-gray-200"
+                            onClick={() =>
+                              setDeleteConfirm({ id: p.id, type: 'product' })
+                            }
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div className="p-4 flex-1 flex flex-col">
@@ -513,9 +525,11 @@ export default function Products() {
                     <th className="px-4 py-3 font-semibold text-[#227b50]">
                       Termos
                     </th>
-                    <th className="px-4 py-3 font-semibold text-[#227b50] text-right">
-                      Ações
-                    </th>
+                    {(canUpdate || canDelete) && (
+                      <th className="px-4 py-3 font-semibold text-[#227b50] text-right">
+                        Ações
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -568,28 +582,37 @@ export default function Products() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-500 hover:text-[#227b50] bg-white shadow-sm border border-gray-200"
-                              onClick={() => handleOpenProductModal(p)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-500 hover:text-red-600 bg-white shadow-sm border border-gray-200"
-                              onClick={() =>
-                                setDeleteConfirm({ id: p.id, type: 'product' })
-                              }
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </td>
+                        {(canUpdate || canDelete) && (
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {canUpdate && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-500 hover:text-[#227b50] bg-white shadow-sm border border-gray-200"
+                                  onClick={() => handleOpenProductModal(p)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-500 hover:text-red-600 bg-white shadow-sm border border-gray-200"
+                                  onClick={() =>
+                                    setDeleteConfirm({
+                                      id: p.id,
+                                      type: 'product',
+                                    })
+                                  }
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     )
                   })}
@@ -757,20 +780,22 @@ export default function Products() {
             <DialogTitle>Gerenciar Categorias</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Nome da nova categoria"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-              />
-              <Button
-                onClick={handleAddCategory}
-                className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
-              >
-                Adicionar
-              </Button>
-            </div>
+            {canCreate && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nome da nova categoria"
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                />
+                <Button
+                  onClick={handleAddCategory}
+                  className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
+                >
+                  Adicionar
+                </Button>
+              </div>
+            )}
 
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
               {productCategories.map((c) => (
@@ -779,16 +804,18 @@ export default function Products() {
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:bg-gray-100"
                 >
                   <span className="font-medium text-gray-700">{c.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-white"
-                    onClick={() =>
-                      setDeleteConfirm({ id: c.id, type: 'category' })
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-white"
+                      onClick={() =>
+                        setDeleteConfirm({ id: c.id, type: 'category' })
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
               {productCategories.length === 0 && (
@@ -816,20 +843,22 @@ export default function Products() {
             <DialogTitle>Gerenciar Marcas</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Nome da nova marca"
-                value={brandName}
-                onChange={(e) => setBrandName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddBrand()}
-              />
-              <Button
-                onClick={handleAddBrand}
-                className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
-              >
-                Adicionar
-              </Button>
-            </div>
+            {canCreate && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nome da nova marca"
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddBrand()}
+                />
+                <Button
+                  onClick={handleAddBrand}
+                  className="bg-[#227b50] hover:bg-[#1a5f3e] text-white"
+                >
+                  Adicionar
+                </Button>
+              </div>
+            )}
 
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
               {brands.map((b) => (
@@ -838,16 +867,18 @@ export default function Products() {
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:bg-gray-100"
                 >
                   <span className="font-medium text-gray-700">{b.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-white"
-                    onClick={() =>
-                      setDeleteConfirm({ id: b.id, type: 'brand' })
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-white"
+                      onClick={() =>
+                        setDeleteConfirm({ id: b.id, type: 'brand' })
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
               {brands.length === 0 && (

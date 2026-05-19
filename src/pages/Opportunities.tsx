@@ -41,8 +41,9 @@ export default function Opportunities() {
   const {
     opportunities,
     leads,
-    services,
-    categories,
+    products,
+    productCategories,
+    brands,
     users,
     addOpportunity,
     updateOpportunityStatus,
@@ -54,8 +55,9 @@ export default function Opportunities() {
 
   const [formData, setFormData] = useState({
     leadId: '',
-    type: 'Fee Mensal' as OppType,
-    service: '',
+    categoryId: 'all',
+    brandId: 'all',
+    productId: '',
     value: '',
     status: 'Aguardando' as OppStatus,
     leadNeeds: '',
@@ -68,40 +70,34 @@ export default function Opportunities() {
       const selectedLead = leads.find((l) => l.id === formData.leadId)
 
       if (selectedLead) {
-        if (selectedLead.service_id) {
-          const svc = services.find((s) => s.id === selectedLead.service_id)
-          if (svc) {
-            // Service found, apply it and mark lead as processed
-            lastProcessedLeadId.current = formData.leadId
+        lastProcessedLeadId.current = formData.leadId
+        let val = selectedLead.estimatedValue?.toString() || ''
 
-            let oppType: OppType = 'Fee Mensal'
-            const cat = categories.find((c) => c.id === svc.categoryId)
-            if (
-              cat &&
-              (cat.name.toLowerCase().includes('pontual') ||
-                cat.name.toLowerCase().includes('job'))
-            ) {
-              oppType = 'Job'
-            }
+        if (selectedLead.product_id) {
+          const prod = products?.find((p) => p.id === selectedLead.product_id)
+          if (prod) {
             setFormData((prev) => ({
               ...prev,
-              type: oppType,
-              service: svc.name,
-              value:
-                prev.value ||
-                selectedLead.estimatedValue?.toString() ||
-                svc.baseValue.toString(),
+              productId: prod.id,
+              categoryId: prod.categoryId || 'all',
+              brandId: prod.brandId || 'all',
+              value: prev.value || val || prod.price.toString(),
+            }))
+          } else {
+            setFormData((prev) => ({
+              ...prev,
+              value: prev.value || val,
             }))
           }
-          // If svc not found yet (e.g. services not loaded), we DO NOT mark it as processed.
-          // It will re-run when services array changes.
         } else {
-          // Lead has no service, mark as processed so we don't keep checking
-          lastProcessedLeadId.current = formData.leadId
+          setFormData((prev) => ({
+            ...prev,
+            value: prev.value || val,
+          }))
         }
       }
     }
-  }, [formData.leadId, leads, services, categories])
+  }, [formData.leadId, leads, products])
 
   if (!currentUser) return null
 
@@ -117,23 +113,14 @@ export default function Opportunities() {
       !opp.userId,
   )
 
-  const dbAvailableServices = services.filter((s) => {
-    const cat = categories.find((c) => c.id === s.categoryId)
-    const isJob =
-      cat &&
-      (cat.name.toLowerCase().includes('pontual') ||
-        cat.name.toLowerCase().includes('job'))
-    if (formData.type === 'Job') return isJob
-    return !isJob
-  })
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.leadId || !formData.service || !formData.value) return
+    if (!formData.leadId || !formData.productId || !formData.value) return
+    const prod = products?.find((p) => p.id === formData.productId)
     await addOpportunity({
       leadId: formData.leadId,
-      type: formData.type,
-      service: formData.service,
+      type: 'Job', // Compatibilidade
+      service: prod ? prod.name : '',
       value: Number(formData.value),
       status: formData.status,
       userId: currentUser.role === 'ADMIN' ? null : currentUser.id,
@@ -141,8 +128,9 @@ export default function Opportunities() {
     setIsOpen(false)
     setFormData({
       leadId: '',
-      type: 'Fee Mensal',
-      service: '',
+      categoryId: 'all',
+      brandId: 'all',
+      productId: '',
       value: '',
       status: 'Aguardando',
       leadNeeds: '',
@@ -169,7 +157,7 @@ export default function Opportunities() {
               Pipeline de Vendas
             </h1>
             <p className="text-muted-foreground text-sm">
-              Gerencie propostas e negociações (JOB / Fee Mensal)
+              Gerencie propostas e negociações de produtos
             </p>
           </div>
         </div>
@@ -180,8 +168,9 @@ export default function Opportunities() {
             if (!open) {
               setFormData({
                 leadId: '',
-                type: 'Fee Mensal',
-                service: '',
+                categoryId: 'all',
+                brandId: 'all',
+                productId: '',
                 value: '',
                 status: 'Aguardando',
                 leadNeeds: '',
@@ -197,7 +186,7 @@ export default function Opportunities() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nova Oportunidade S7SALES</DialogTitle>
+              <DialogTitle>Nova Oportunidade</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div>
@@ -239,38 +228,29 @@ export default function Opportunities() {
                             key={l.id}
                             className="px-3 py-2 hover:bg-[#227b50]/10 rounded cursor-pointer text-sm transition-colors"
                             onClick={() => {
-                              let serviceName = ''
-                              let oppType: OppType = 'Fee Mensal'
                               let value = l.estimatedValue?.toString() || ''
+                              let pId = ''
+                              let cId = 'all'
+                              let bId = 'all'
 
-                              if (l.service_id) {
-                                const svc = services.find(
-                                  (s) => s.id === l.service_id,
+                              if (l.product_id) {
+                                const prod = products?.find(
+                                  (p) => p.id === l.product_id,
                                 )
-                                if (svc) {
-                                  serviceName = svc.name
-                                  if (!value) value = svc.baseValue.toString()
-
-                                  const cat = categories.find(
-                                    (c) => c.id === svc.categoryId,
-                                  )
-                                  if (
-                                    cat &&
-                                    (cat.name
-                                      .toLowerCase()
-                                      .includes('pontual') ||
-                                      cat.name.toLowerCase().includes('job'))
-                                  ) {
-                                    oppType = 'Job'
-                                  }
+                                if (prod) {
+                                  pId = prod.id
+                                  cId = prod.categoryId || 'all'
+                                  bId = prod.brandId || 'all'
+                                  if (!value) value = prod.price.toString()
                                 }
                               }
 
                               setFormData((prev) => ({
                                 ...prev,
                                 leadId: l.id,
-                                service: serviceName,
-                                type: oppType,
+                                productId: pId,
+                                categoryId: cId,
+                                brandId: bId,
                                 value: value,
                                 leadNeeds: l.notes || prev.leadNeeds,
                               }))
@@ -308,87 +288,77 @@ export default function Opportunities() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">
-                    Modelo de Negócio
-                  </label>
+                  <label className="text-sm font-medium">Categoria</label>
                   <Select
-                    value={formData.type || undefined}
-                    onValueChange={(v: OppType) =>
-                      setFormData({ ...formData, type: v, service: '' })
+                    value={formData.categoryId}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, categoryId: v, productId: '' })
                     }
-                    disabled={!!formData.leadId}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Fee Mensal">
-                        Fee Mensal (Recorrente)
-                      </SelectItem>
-                      <SelectItem value="Job">JOB (Pontual)</SelectItem>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {productCategories?.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">
-                    Serviço Específico
-                  </label>
+                  <label className="text-sm font-medium">Marca</label>
                   <Select
-                    value={formData.service || undefined}
+                    value={formData.brandId}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, brandId: v, productId: '' })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {brands?.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium">Produto</label>
+                  <Select
+                    value={formData.productId || undefined}
                     onValueChange={(v) => {
-                      const svc = services.find((s) => s.name === v)
+                      const prod = products?.find((p) => p.id === v)
                       setFormData({
                         ...formData,
-                        service: v,
-                        value: svc ? svc.baseValue.toString() : formData.value,
+                        productId: v,
+                        value: prod ? prod.price.toString() : formData.value,
                       })
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Catálogo..." />
+                      <SelectValue placeholder="Selecione um produto..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => {
-                        const catServices = dbAvailableServices.filter(
-                          (s) => s.categoryId === cat.id,
+                      {products
+                        ?.filter(
+                          (p) =>
+                            (formData.categoryId === 'all' ||
+                              p.categoryId === formData.categoryId) &&
+                            (formData.brandId === 'all' ||
+                              p.brandId === formData.brandId),
                         )
-                        if (catServices.length === 0) return null
-                        return (
-                          <SelectGroup key={cat.id}>
-                            <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
-                              {cat.name}
-                            </SelectLabel>
-                            {catServices.map((s) => (
-                              <SelectItem key={s.id} value={s.name}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        )
-                      })}
-                      {dbAvailableServices.filter((s) => !s.categoryId).length >
-                        0 && (
-                        <SelectGroup>
-                          <SelectLabel className="bg-gray-50 text-gray-500 font-semibold">
-                            Outros
-                          </SelectLabel>
-                          {dbAvailableServices
-                            .filter((s) => !s.categoryId)
-                            .map((s) => (
-                              <SelectItem key={s.id} value={s.name}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                        </SelectGroup>
-                      )}
-                      {formData.service &&
-                        !dbAvailableServices.some(
-                          (s) => s.name === formData.service,
-                        ) && (
-                          <SelectItem value={formData.service}>
-                            {formData.service}
+                        .map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
                           </SelectItem>
-                        )}
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -407,24 +377,6 @@ export default function Opportunities() {
                   placeholder="Ex: 5000"
                   className="h-11 text-lg font-semibold"
                 />
-                {(() => {
-                  const dbService = services.find(
-                    (s) => s.name === formData.service,
-                  )
-                  const min = dbService?.baseValue
-                  const max = dbService?.ceilingValue
-
-                  if (min !== undefined && max !== undefined) {
-                    return (
-                      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>{' '}
-                        Range de Tabela: R$ {min.toLocaleString()} a{' '}
-                        {max === 100000 ? 'R$ ∞' : `R$ ${max.toLocaleString()}`}
-                      </p>
-                    )
-                  }
-                  return null
-                })()}
               </div>
               <DialogFooter className="mt-6">
                 <Button
@@ -466,7 +418,7 @@ export default function Opportunities() {
             <TableHeader className="bg-gray-50">
               <TableRow>
                 <TableHead>Lead</TableHead>
-                <TableHead>Serviço / Modelo</TableHead>
+                <TableHead>Produto</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead className="text-center">Status</TableHead>
@@ -484,9 +436,6 @@ export default function Opportunities() {
                     <TableCell>
                       <div className="text-sm text-gray-900 font-medium">
                         {opp.service}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {opp.type}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">

@@ -7,7 +7,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp'
-import { ShieldCheck, MailCheck, Loader2 } from 'lucide-react'
+import { ShieldCheck, MailCheck, Loader2, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function TwoFactorAuth() {
@@ -15,7 +15,9 @@ export default function TwoFactorAuth() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isResending, setIsResending] = useState(false)
-  const { session, verify2FA, send2FA, is2FAVerified, loading } = useAuth()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const { session, verify2FA, send2FA, is2FAVerified, loading, signOut } =
+    useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -48,6 +50,16 @@ export default function TwoFactorAuth() {
       navigate(from, { replace: true })
     } else {
       setError('Código inválido ou expirado')
+    }
+  }
+
+  const handleGoBack = async () => {
+    setIsSigningOut(true)
+    try {
+      await signOut()
+      navigate('/login', { replace: true })
+    } finally {
+      setIsSigningOut(false)
     }
   }
 
@@ -153,6 +165,23 @@ export default function TwoFactorAuth() {
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : null}
                 {isResending ? 'Enviando...' : 'Reenviar código'}
+              </Button>
+            </div>
+
+            <div className="w-full pt-4 mt-2 border-t border-gray-100 flex justify-center">
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 h-auto py-2 px-4 text-sm flex items-center gap-2 rounded-lg transition-colors"
+                onClick={handleGoBack}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ArrowLeft className="w-4 h-4" />
+                )}
+                Voltar e trocar e-mail
               </Button>
             </div>
           </form>

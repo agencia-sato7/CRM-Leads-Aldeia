@@ -448,15 +448,20 @@ export default function Products() {
             <div className="space-y-2">
               <Label>Preço Base</Label>
               <Input
-                type="number"
-                placeholder="0.00"
-                value={productForm.price}
-                onChange={(e) =>
+                type="text"
+                placeholder="R$ 0,00"
+                value={new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                }).format(productForm.price || 0)}
+                onChange={(e) => {
+                  const rawValue = e.target.value.replace(/\D/g, '')
+                  const numericValue = Number(rawValue) / 100
                   setProductForm({
                     ...productForm,
-                    price: Number(e.target.value),
+                    price: numericValue,
                   })
-                }
+                }}
               />
             </div>
             <div className="space-y-2">

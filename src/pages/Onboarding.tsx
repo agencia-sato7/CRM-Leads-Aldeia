@@ -273,7 +273,7 @@ export default function Onboarding() {
     <div className="space-y-6 animate-fade-in pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20">
+          <div className="p-3 bg-[#227b50] text-white rounded-xl shadow-lg shadow-[#227b50]/20">
             <Rocket className="w-6 h-6" />
           </div>
           <div>
@@ -306,7 +306,7 @@ export default function Onboarding() {
           )}
           <Button
             onClick={() => setIsDialogOpen(true)}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-[#227b50] hover:bg-[#1a5d3c] text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Novo Onboarding
@@ -325,7 +325,7 @@ export default function Onboarding() {
 
       {visibleOnboardings.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center flex flex-col items-center justify-center print:hidden">
-          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-[#227b50]/10 text-[#227b50] rounded-full flex items-center justify-center mb-4">
             <Rocket className="w-8 h-8" />
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-1">
@@ -338,7 +338,7 @@ export default function Onboarding() {
           <Button
             onClick={() => setIsDialogOpen(true)}
             variant="outline"
-            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            className="border-[#227b50]/20 text-[#227b50] hover:bg-[#227b50]/10 hover:text-[#1a5d3c]"
           >
             <Plus className="w-4 h-4 mr-2" />
             Adicionar Onboarding
@@ -434,7 +434,7 @@ export default function Onboarding() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                      className="text-[#227b50] hover:text-[#1a5d3c] hover:bg-[#227b50]/10 h-8 w-8"
                       onClick={() => {
                         setOnboardingToDelete(o.id)
                         setIsDeleteDialogOpen(true)
@@ -684,7 +684,7 @@ export default function Onboarding() {
                 variant="destructive"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-[#227b50] hover:bg-[#1a5d3c] text-white"
               >
                 {isDeleting ? 'Removendo...' : 'Sim, remover'}
               </Button>
@@ -732,7 +732,7 @@ export default function Onboarding() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="h-8 w-8 text-[#227b50] hover:text-[#1a5d3c] hover:bg-[#227b50]/10"
                       onClick={() => handleRemoveEmail(email)}
                     >
                       <X className="w-4 h-4" />

@@ -833,11 +833,19 @@ export default function Leads() {
                       <div
                         className="inline-block"
                         onClick={() => {
-                          if (
+                          const isTerminal =
+                            lead.status === 'Ganho' || lead.status === 'Perdido'
+                          const notOwnerBlock =
                             currentUser.role !== 'ADMIN' &&
                             lead.userId &&
                             lead.userId !== currentUser.id
-                          ) {
+
+                          if (isTerminal) {
+                            toast.error('Ação Bloqueada', {
+                              description:
+                                'Leads ganhos ou perdidos não podem ter seu status alterado.',
+                            })
+                          } else if (notOwnerBlock) {
                             toast.error('Ação Bloqueada', {
                               description:
                                 'Apenas o responsável ou um administrador pode alterar o status deste lead.',

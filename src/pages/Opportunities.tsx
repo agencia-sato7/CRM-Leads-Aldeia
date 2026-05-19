@@ -502,19 +502,19 @@ export default function Opportunities() {
                             opp.userId !== currentUser.id &&
                             currentUser.role !== 'ADMIN'
                           const terminalBlock =
-                            currentUser.role === 'COMMERCIAL' &&
-                            (opp.status === 'Ganha' ||
-                              (opp.status as string) === 'Fechado')
+                            opp.status === 'Ganha' ||
+                            opp.status === 'Perdida' ||
+                            (opp.status as string) === 'Fechado'
 
-                          if (notOwnerBlock) {
+                          if (terminalBlock) {
+                            toast.error('Ação Bloqueada', {
+                              description:
+                                'Oportunidades ganhas ou perdidas não podem ter seu status alterado.',
+                            })
+                          } else if (notOwnerBlock) {
                             toast.error('Ação Bloqueada', {
                               description:
                                 'Apenas o responsável ou um administrador pode alterar esta oportunidade.',
-                            })
-                          } else if (terminalBlock) {
-                            toast.error('Ação Bloqueada', {
-                              description:
-                                'Oportunidades ganhas ou fechadas não podem ter seu status alterado.',
                             })
                           }
                         }}
@@ -525,9 +525,9 @@ export default function Opportunities() {
                             (!!opp.userId &&
                               opp.userId !== currentUser.id &&
                               currentUser.role !== 'ADMIN') ||
-                            (currentUser.role === 'COMMERCIAL' &&
-                              (opp.status === 'Ganha' ||
-                                (opp.status as string) === 'Fechado'))
+                            opp.status === 'Ganha' ||
+                            opp.status === 'Perdida' ||
+                            (opp.status as string) === 'Fechado'
                           }
                           onValueChange={async (v) => {
                             await updateOpportunityStatus(

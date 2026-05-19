@@ -296,9 +296,13 @@ export default function Products() {
                 >
                   <div className="p-4 pb-3 bg-gray-50/80 border-b border-gray-100 flex flex-row items-start justify-between">
                     <div>
-                      <div className="text-[10px] font-bold text-[#227b50] mb-1 uppercase tracking-wider">
-                        {brand?.name || 'Sem Marca'}{' '}
-                        {category ? `• ${category.name}` : ''}
+                      <div className="text-[10px] font-bold text-[#227b50] mb-1 uppercase tracking-wider flex flex-col gap-0.5">
+                        <span>{brand?.name || 'Sem Marca'}</span>
+                        {category && (
+                          <span className="text-gray-500 font-medium">
+                            {category.name}
+                          </span>
+                        )}
                       </div>
                       <h3
                         className="text-base font-semibold leading-tight text-gray-900 line-clamp-2"

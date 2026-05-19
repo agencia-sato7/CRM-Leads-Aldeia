@@ -231,229 +231,241 @@ export const useDataStore = create<DataStore>((set, get) => ({
   products: [],
 
   fetchInitialData: async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-    if (!session?.user) return
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.user) return
 
-    const [
-      { data: profiles },
-      { data: leadsData },
-      { data: oppsData },
-      { data: resourcesData },
-      { data: messagesData },
-      { data: meetingsData },
-      { data: categoriesData },
-      { data: servicesData },
-      { data: customersData },
-      { data: onboardingsData },
-      { data: brandsData },
-      { data: productsData },
-      { data: productCategoriesData },
-    ] = await Promise.all([
-      supabase.from('profiles').select('*'),
-      supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('opportunities')
-        .select('*')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('resources')
-        .select('*')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('meetings')
-        .select('*')
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('categories')
-        .select('*')
-        .order('name', { ascending: true }),
-      supabase.from('services').select('*').order('name', { ascending: true }),
-      supabase
-        .from('customers')
-        .select('*')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('onboardings')
-        .select('*')
-        .order('created_at', { ascending: false }),
-      supabase.from('brands').select('*').order('name', { ascending: true }),
-      supabase.from('products').select('*').order('name', { ascending: true }),
-      supabase
-        .from('product_categories')
-        .select('*')
-        .order('name', { ascending: true }),
-    ])
+      const responses = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('opportunities')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('resources')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('messages')
+          .select('*')
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('meetings')
+          .select('*')
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('categories')
+          .select('*')
+          .order('name', { ascending: true }),
+        supabase
+          .from('services')
+          .select('*')
+          .order('name', { ascending: true }),
+        supabase
+          .from('customers')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('onboardings')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase.from('brands').select('*').order('name', { ascending: true }),
+        supabase
+          .from('products')
+          .select('*')
+          .order('name', { ascending: true }),
+        supabase
+          .from('product_categories')
+          .select('*')
+          .order('name', { ascending: true }),
+      ])
 
-    const mappedUsers: User[] = (profiles || []).map((p) => ({
-      id: p.id,
-      name: p.name,
-      email: p.email,
-      role: p.role as Role,
-      phone: p.phone || undefined,
-      isLocked: p.is_locked || false,
-    }))
+      const profiles = responses[0]?.data || []
+      const leadsData = responses[1]?.data || []
+      const oppsData = responses[2]?.data || []
+      const resourcesData = responses[3]?.data || []
+      const messagesData = responses[4]?.data || []
+      const meetingsData = responses[5]?.data || []
+      const categoriesData = responses[6]?.data || []
+      const servicesData = responses[7]?.data || []
+      const customersData = responses[8]?.data || []
+      const onboardingsData = responses[9]?.data || []
+      const brandsData = responses[10]?.data || []
+      const productsData = responses[11]?.data || []
+      const productCategoriesData = responses[12]?.data || []
 
-    const currentUser =
-      mappedUsers.find((u) => u.id === session.user.id) || null
+      const mappedUsers: User[] = (profiles || []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        role: p.role as Role,
+        phone: p.phone || undefined,
+        isLocked: p.is_locked || false,
+      }))
 
-    const mappedLeads: Lead[] = (leadsData || []).map((lead) => ({
-      id: lead.id,
-      userId: lead.user_id,
-      contact: lead.contact,
-      company: lead.company,
-      email: lead.email || '',
-      phone: lead.phone || '',
-      status: lead.status as LeadStatus,
-      country: lead.country as Country,
-      city: lead.city || '',
-      origin: lead.origin as LeadOrigin,
-      marketingStatus: lead.marketing_status || '',
-      objectives: lead.objectives || '',
-      notes: lead.notes || '',
-      scheduledMeetingDate: lead.scheduled_meeting_date || undefined,
-      investsInMkt: lead.invests_in_mkt || false,
-      hasAgency: lead.has_agency || false,
-      service_id: lead.service_id || undefined,
-      estimatedValue: (lead as any).estimated_value
-        ? Number((lead as any).estimated_value)
-        : undefined,
-      createdAt: lead.created_at,
-      meetings: (meetingsData || [])
-        .filter((m) => m.lead_id === lead.id)
-        .map((m) => ({
-          id: m.id,
-          date: m.date,
-          notes: m.notes || '',
-        })),
-    }))
+      const currentUser =
+        mappedUsers.find((u) => u.id === session.user.id) || null
 
-    const mappedOpps: Opportunity[] = (oppsData || []).map((opp) => ({
-      id: opp.id,
-      leadId: opp.lead_id,
-      userId: opp.user_id,
-      type: opp.type as OppType,
-      service: opp.service,
-      value: Number(opp.value),
-      status: opp.status as OppStatus,
-      createdAt: opp.created_at,
-      updatedAt: opp.updated_at,
-    }))
+      const mappedLeads: Lead[] = (leadsData || []).map((lead) => ({
+        id: lead.id,
+        userId: lead.user_id,
+        contact: lead.contact,
+        company: lead.company,
+        email: lead.email || '',
+        phone: lead.phone || '',
+        status: lead.status as LeadStatus,
+        country: lead.country as Country,
+        city: lead.city || '',
+        origin: lead.origin as LeadOrigin,
+        marketingStatus: lead.marketing_status || '',
+        objectives: lead.objectives || '',
+        notes: lead.notes || '',
+        scheduledMeetingDate: lead.scheduled_meeting_date || undefined,
+        investsInMkt: lead.invests_in_mkt || false,
+        hasAgency: lead.has_agency || false,
+        service_id: lead.service_id || undefined,
+        estimatedValue: (lead as any).estimated_value
+          ? Number((lead as any).estimated_value)
+          : undefined,
+        createdAt: lead.created_at,
+        meetings: (meetingsData || [])
+          .filter((m) => m.lead_id === lead.id)
+          .map((m) => ({
+            id: m.id,
+            date: m.date,
+            notes: m.notes || '',
+          })),
+      }))
 
-    const mappedMessages: Message[] = (messagesData || []).map((msg) => ({
-      id: msg.id,
-      fromId: msg.from_id,
-      toId: msg.to_id,
-      text: msg.text,
-      fileUrl: msg.file_url || undefined,
-      read: msg.read || false,
-      createdAt: msg.created_at,
-    }))
+      const mappedOpps: Opportunity[] = (oppsData || []).map((opp) => ({
+        id: opp.id,
+        leadId: opp.lead_id,
+        userId: opp.user_id,
+        type: opp.type as OppType,
+        service: opp.service,
+        value: Number(opp.value),
+        status: opp.status as OppStatus,
+        createdAt: opp.created_at,
+        updatedAt: opp.updated_at,
+      }))
 
-    const mappedResources: Resource[] = (resourcesData || []).map((res) => ({
-      id: res.id,
-      title: res.title,
-      desc: res.description || '',
-      tag: res.tag,
-      url: res.url || undefined,
-    }))
+      const mappedMessages: Message[] = (messagesData || []).map((msg) => ({
+        id: msg.id,
+        fromId: msg.from_id,
+        toId: msg.to_id,
+        text: msg.text,
+        fileUrl: msg.file_url || undefined,
+        read: msg.read || false,
+        createdAt: msg.created_at,
+      }))
 
-    const mappedCategories: Category[] = (categoriesData || []).map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      description: cat.description || undefined,
-    }))
+      const mappedResources: Resource[] = (resourcesData || []).map((res) => ({
+        id: res.id,
+        title: res.title,
+        desc: res.description || '',
+        tag: res.tag,
+        url: res.url || undefined,
+      }))
 
-    const mappedServices: Service[] = (servicesData || []).map((svc) => ({
-      id: svc.id,
-      name: svc.name,
-      categoryId: svc.category_id || undefined,
-      baseValue: Number(svc.base_value),
-      ceilingValue: Number(svc.ceiling_value),
-    }))
+      const mappedCategories: Category[] = (categoriesData || []).map(
+        (cat) => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description || undefined,
+        }),
+      )
 
-    const mappedCustomers: Customer[] = (customersData || []).map((c) => ({
-      id: c.id,
-      userId: c.user_id || '',
-      company: c.company,
-      cnpj: (c as any).cnpj || '',
-      contact: c.contact,
-      email: c.email || '',
-      phone: c.phone || '',
-      status: c.status,
-      country: c.country,
-      city: c.city || '',
-      site: (c as any).site || '',
-      facebook: (c as any).facebook || '',
-      instagram: (c as any).instagram || '',
-      notes: c.notes || '',
-      createdAt: c.created_at,
-    }))
+      const mappedServices: Service[] = (servicesData || []).map((svc) => ({
+        id: svc.id,
+        name: svc.name,
+        categoryId: svc.category_id || undefined,
+        baseValue: Number(svc.base_value),
+        ceilingValue: Number(svc.ceiling_value),
+      }))
 
-    const mappedOnboardings: OnboardingData[] = (onboardingsData || []).map(
-      (o) => ({
-        id: o.id,
-        opportunityId: o.opportunity_id,
-        userId: o.user_id,
-        companyName: o.company_name,
-        cnpj: o.cnpj || '',
-        phone: o.phone || '',
-        email: o.email || '',
-        site: o.site || '',
-        instagram: o.instagram || '',
-        facebook: o.facebook || '',
-        serviceDescription: o.service_description || '',
-        marketingContext: o.marketing_context || '',
-        createdAt: o.created_at,
-      }),
-    )
+      const mappedCustomers: Customer[] = (customersData || []).map((c) => ({
+        id: c.id,
+        userId: c.user_id || '',
+        company: c.company,
+        cnpj: (c as any).cnpj || '',
+        contact: c.contact,
+        email: c.email || '',
+        phone: c.phone || '',
+        status: c.status,
+        country: c.country,
+        city: c.city || '',
+        site: (c as any).site || '',
+        facebook: (c as any).facebook || '',
+        instagram: (c as any).instagram || '',
+        notes: c.notes || '',
+        createdAt: c.created_at,
+      }))
 
-    const mappedBrands: Brand[] = (brandsData || []).map((b) => ({
-      id: b.id,
-      name: b.name,
-      createdAt: b.created_at,
-    }))
+      const mappedOnboardings: OnboardingData[] = (onboardingsData || []).map(
+        (o) => ({
+          id: o.id,
+          opportunityId: o.opportunity_id,
+          userId: o.user_id,
+          companyName: o.company_name,
+          cnpj: o.cnpj || '',
+          phone: o.phone || '',
+          email: o.email || '',
+          site: o.site || '',
+          instagram: o.instagram || '',
+          facebook: o.facebook || '',
+          serviceDescription: o.service_description || '',
+          marketingContext: o.marketing_context || '',
+          createdAt: o.created_at,
+        }),
+      )
 
-    const mappedProductCategories: ProductCategory[] = (
-      productCategoriesData || []
-    ).map((c) => ({
-      id: c.id,
-      name: c.name,
-      createdAt: c.created_at,
-    }))
+      const mappedBrands: Brand[] = (brandsData || []).map((b) => ({
+        id: b.id,
+        name: b.name,
+        createdAt: b.created_at,
+      }))
 
-    const mappedProducts: Product[] = (productsData || []).map((p) => ({
-      id: p.id,
-      brandId: p.brand_id || '',
-      categoryId: p.category_id || undefined,
-      name: p.name,
-      searchTerms: p.search_terms || '',
-      createdAt: p.created_at,
-    }))
+      const mappedProductCategories: ProductCategory[] = (
+        productCategoriesData || []
+      ).map((c) => ({
+        id: c.id,
+        name: c.name,
+        createdAt: c.created_at,
+      }))
 
-    set({
-      users: mappedUsers,
-      currentUser,
-      leads: mappedLeads,
-      opportunities: mappedOpps,
-      resources: mappedResources,
-      messages: mappedMessages,
-      categories: mappedCategories,
-      services: mappedServices,
-      customers: mappedCustomers,
-      onboardings: mappedOnboardings,
-      brands: mappedBrands,
-      productCategories: mappedProductCategories,
-      products: mappedProducts,
-    })
+      const mappedProducts: Product[] = (productsData || []).map((p) => ({
+        id: p.id,
+        brandId: p.brand_id || '',
+        categoryId: p.category_id || undefined,
+        name: p.name,
+        searchTerms: p.search_terms || '',
+        createdAt: p.created_at,
+      }))
+
+      set({
+        users: mappedUsers,
+        currentUser,
+        leads: mappedLeads,
+        opportunities: mappedOpps,
+        resources: mappedResources,
+        messages: mappedMessages,
+        categories: mappedCategories,
+        services: mappedServices,
+        customers: mappedCustomers,
+        onboardings: mappedOnboardings,
+        brands: mappedBrands,
+        productCategories: mappedProductCategories,
+        products: mappedProducts,
+      })
+    } catch (error) {
+      console.error('Failed to fetch initial data:', error)
+    }
   },
 
   updateUser: async (id, data) => {

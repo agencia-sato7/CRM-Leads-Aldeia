@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Building2,
   Plus,
@@ -45,9 +45,8 @@ export default function Customers() {
     cnpj: '',
   })
 
-  if (!currentUser) return null
-
   const userCustomers = useMemo(() => {
+    if (!currentUser) return []
     return customers.filter(
       (c) => currentUser.role === 'ADMIN' || c.userId === currentUser.id,
     )
@@ -69,7 +68,7 @@ export default function Customers() {
     return filteredCustomers.slice(start, start + itemsPerPage)
   }, [filteredCustomers, currentPage])
 
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1)
   }, [search])
 
@@ -126,6 +125,8 @@ export default function Customers() {
       return
     }
 
+    if (!currentUser) return
+
     setIsSaving(true)
     try {
       if (editingCustomer) {
@@ -159,6 +160,8 @@ export default function Customers() {
       toast({ title: 'Erro ao remover', variant: 'destructive' })
     }
   }
+
+  if (!currentUser) return null
 
   return (
     <div className="space-y-6 animate-fade-in pb-20">

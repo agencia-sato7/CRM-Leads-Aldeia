@@ -32,6 +32,7 @@ const RESOURCES = [
   { value: 'resources', label: 'Materiais (Repositório)' },
   { value: 'team', label: 'Equipe' },
   { value: 'roles', label: 'Controle de Acesso' },
+  { value: 'products', label: 'Produtos' },
 ]
 
 export default function Roles() {

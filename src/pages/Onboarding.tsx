@@ -281,7 +281,7 @@ export default function Onboarding() {
               Fluxo de Onboarding
             </h1>
             <p className="text-muted-foreground text-sm">
-              Handover: Transição Oficial de Comercial para Operação SATO7.
+              Handover: Transição Oficial de Comercial para Operação.
             </p>
           </div>
         </div>
@@ -359,7 +359,7 @@ export default function Onboarding() {
                   Contato
                 </TableHead>
                 <TableHead className="font-semibold text-gray-900">
-                  Descrição do Serviço
+                  Descrição do Produto
                 </TableHead>
                 <TableHead className="font-semibold text-gray-900">
                   Responsável
@@ -463,7 +463,7 @@ export default function Onboarding() {
                   Vincular Contrato Fechado (Gatilho de Automação)
                 </label>
                 <Select value={selectedOppId} onValueChange={handleOppChange}>
-                  <SelectTrigger className="bg-white h-10 w-full">
+                  <SelectTrigger className="bg-white h-10 w-full focus:ring-[#227b50]">
                     <SelectValue placeholder="Selecione a oportunidade ganha..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -482,7 +482,7 @@ export default function Onboarding() {
                   <div className="mt-3 flex gap-4 text-sm text-gray-600 bg-white p-3 rounded-lg border border-gray-100">
                     <div>
                       <span className="font-semibold text-gray-800 block">
-                        Serviço:
+                        Produto:
                       </span>
                       {formData.serviceName || '-'}
                     </div>
@@ -509,6 +509,7 @@ export default function Onboarding() {
                   </label>
                   <Input
                     required
+                    className="focus-visible:ring-[#227b50]"
                     placeholder="Ex: Global Tech Ltda"
                     value={formData.companyName}
                     onChange={(e) =>
@@ -522,6 +523,7 @@ export default function Onboarding() {
                   </label>
                   <Input
                     required
+                    className="focus-visible:ring-[#227b50]"
                     placeholder="00.000.000/0001-00"
                     value={formData.cnpj}
                     onChange={(e) =>
@@ -535,11 +537,21 @@ export default function Onboarding() {
                   </label>
                   <Input
                     required
-                    placeholder="+55 11 99999-9999"
+                    className="focus-visible:ring-[#227b50]"
+                    placeholder="(11) 99999-9999"
                     value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      let formatted = digits
+                      if (digits.length > 2 && digits.length <= 6) {
+                        formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+                      } else if (digits.length > 6 && digits.length <= 10) {
+                        formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+                      } else if (digits.length > 10) {
+                        formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
+                      }
+                      setFormData({ ...formData, phone: formatted })
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -549,6 +561,7 @@ export default function Onboarding() {
                   <Input
                     type="email"
                     required
+                    className="focus-visible:ring-[#227b50]"
                     placeholder="contato@empresa.com"
                     value={formData.email}
                     onChange={(e) =>
@@ -561,6 +574,7 @@ export default function Onboarding() {
                     Site
                   </label>
                   <Input
+                    className="focus-visible:ring-[#227b50]"
                     placeholder="https://"
                     value={formData.site}
                     onChange={(e) =>
@@ -573,6 +587,7 @@ export default function Onboarding() {
                     Instagram Oficial
                   </label>
                   <Input
+                    className="focus-visible:ring-[#227b50]"
                     placeholder="@empresa"
                     value={formData.instagram}
                     onChange={(e) =>
@@ -585,6 +600,7 @@ export default function Onboarding() {
                     Facebook
                   </label>
                   <Input
+                    className="focus-visible:ring-[#227b50]"
                     placeholder="/empresa"
                     value={formData.facebook}
                     onChange={(e) =>
@@ -601,10 +617,10 @@ export default function Onboarding() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700">
-                      Descrição do Serviço Vendido
+                      Descrição do Produto Vendido
                     </label>
                     <textarea
-                      className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm min-h-[80px]"
+                      className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm min-h-[80px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#227b50]"
                       placeholder="Escopo resumido acordado..."
                       required
                       value={formData.serviceDescription}
@@ -621,8 +637,8 @@ export default function Onboarding() {
                       Marketing Atual vs Expectativas
                     </label>
                     <textarea
-                      className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm min-h-[80px]"
-                      placeholder="Onde o cliente está e onde quer chegar com a SATO7?"
+                      className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm min-h-[80px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#227b50]"
+                      placeholder="Onde o cliente está e onde quer chegar?"
                       required
                       value={formData.marketingContext}
                       onChange={(e) =>

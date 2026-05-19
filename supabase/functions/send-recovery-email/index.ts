@@ -33,14 +33,7 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    if (
-      !SUPABASE_URL ||
-      !SUPABASE_SERVICE_ROLE_KEY ||
-      !SMTP_HOST ||
-      !SMTP_USER ||
-      !SMTP_PASS ||
-      !SMTP_FROM
-    ) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
       throw new Error('Missing environment variables (SMTP or Supabase)')
     }
 

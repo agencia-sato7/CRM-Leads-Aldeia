@@ -36,7 +36,7 @@ export default function Index() {
     markMessageRead,
   } = useDataStore()
 
-  const [region, setRegion] = useState<'all' | 'Brazil' | 'USA'>('all')
+  const [region, setRegion] = useState<'all' | 'Brazil'>('all')
   const [selectedUserId, setSelectedUserId] = useState<string>('all')
 
   const now = new Date()
@@ -146,7 +146,6 @@ export default function Index() {
               <SelectContent>
                 <SelectItem value="all">Todas as Regiões</SelectItem>
                 <SelectItem value="Brazil">Brasil</SelectItem>
-                <SelectItem value="USA">Internacional</SelectItem>
               </SelectContent>
             </Select>
           </div>

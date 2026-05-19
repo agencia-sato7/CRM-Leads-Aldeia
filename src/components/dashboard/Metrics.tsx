@@ -54,15 +54,6 @@ export function Metrics({
   )
   const openValBRL = openOpps.reduce((acc, o) => acc + o.value, 0)
 
-  const openLeadsUSD = relevantLeads.filter(
-    (l) =>
-      l.country !== 'Brazil' && l.status !== 'Perdida' && l.status !== 'Ganha',
-  )
-  const openValUSD = openLeadsUSD.reduce(
-    (acc, l) => acc + (l.estimated_value || 0),
-    0,
-  )
-
   const cards = [
     {
       title: 'Orçamentos Abertos (Real BRL)',
@@ -71,19 +62,6 @@ export function Metrics({
       color: 'text-emerald-600',
       bg: 'bg-emerald-100',
       trend: 'Pipeline em aberto',
-    },
-    {
-      title: 'Orçamentos Abertos (Dólar USD)',
-      value: new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(openValUSD),
-      icon: Wallet,
-      color: 'text-blue-600',
-      bg: 'bg-blue-100',
-      trend: 'Pipeline internacional',
     },
     {
       title: 'Orçamentos Fechados',
@@ -120,7 +98,7 @@ export function Metrics({
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {cards.map((c, i) => (
         <div
           key={i}

@@ -2,10 +2,11 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { useDataStore } from '@/stores/use-data-store'
 import { Button } from '@/components/ui/button'
-import { LogOut, ShieldCheck } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import logoUrl from '@/assets/logo-dtosb2yn-68c37.png'
 
 export default function Layout() {
   const { currentUser, logout } = useDataStore()
@@ -67,8 +68,12 @@ export default function Layout() {
       <Sidebar />
       <div className="flex-1 md:ml-20 flex flex-col">
         <header className="h-16 bg-white border-b flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
-          <div className="font-extrabold text-2xl text-red-600 tracking-tighter flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6" /> S7SALES
+          <div className="flex items-center">
+            <img
+              src={logoUrl}
+              alt="Aldeia Acabamentos"
+              className="h-8 object-contain"
+            />
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 border-r pr-6 border-gray-100">

@@ -117,19 +117,13 @@ export interface OnboardingData {
 
 export interface Customer {
   id: string
-  company: string
-  cnpj?: string
-  contact: string
-  email: string
-  phone: string
-  status: string
-  country: string
-  city: string
-  site?: string
-  facebook?: string
-  instagram?: string
-  notes: string
+  leadId?: string
   userId: string
+  name: string
+  company: string
+  email?: string
+  phone?: string
+  cnpj?: string
   createdAt: string
 }
 
@@ -400,19 +394,13 @@ export const useDataStore = create<DataStore>((set, get) => ({
 
       const mappedCustomers: Customer[] = (customersData || []).map((c) => ({
         id: c.id,
+        leadId: c.lead_id || undefined,
         userId: c.user_id || '',
+        name: c.name,
         company: c.company,
-        cnpj: (c as any).cnpj || '',
-        contact: c.contact,
         email: c.email || '',
         phone: c.phone || '',
-        status: c.status,
-        country: c.country,
-        city: c.city || '',
-        site: (c as any).site || '',
-        facebook: (c as any).facebook || '',
-        instagram: (c as any).instagram || '',
-        notes: c.notes || '',
+        cnpj: c.cnpj || '',
         createdAt: c.created_at,
       }))
 
@@ -662,30 +650,6 @@ export const useDataStore = create<DataStore>((set, get) => ({
       }
     }
 
-    if (data.status === 'Ganho') {
-      const currentLead = get().leads.find((l) => l.id === id)
-      if (currentLead) {
-        const existingCustomer = get().customers.find(
-          (c) =>
-            c.company === currentLead.company &&
-            c.contact === currentLead.contact,
-        )
-        if (!existingCustomer) {
-          await get().addCustomer({
-            userId: currentLead.userId,
-            company: currentLead.company,
-            contact: currentLead.contact,
-            email: currentLead.email,
-            phone: currentLead.phone,
-            status: 'Ativo',
-            country: currentLead.country,
-            city: currentLead.city,
-            notes: currentLead.notes,
-          })
-        }
-      }
-    }
-
     if (data.status === 'Em Negociação') {
       const currentLead = get().leads.find((l) => l.id === id)
       const existingOpp = get().opportunities.find((o) => o.leadId === id)
@@ -812,25 +776,36 @@ export const useDataStore = create<DataStore>((set, get) => ({
         }
         await supabase.from('leads').update(leadUpdate).eq('id', opp.leadId)
       } else if (status === 'Ganha') {
-        const lead = get().leads.find((l) => l.id === opp.leadId)
-        if (lead) {
-          const existingCustomer = get().customers.find(
-            (c) => c.company === lead.company && c.contact === lead.contact,
-          )
-          if (!existingCustomer) {
-            await get().addCustomer({
-              userId: lead.userId,
-              company: lead.company,
-              contact: lead.contact,
-              email: lead.email,
-              phone: lead.phone,
-              status: 'Ativo',
-              country: lead.country,
-              city: lead.city,
-              notes: lead.notes,
-            })
+        setTimeout(async () => {
+          if (opp.leadId) {
+            const { data } = await supabase
+              .from('customers')
+              .select('*')
+              .eq('lead_id', opp.leadId)
+              .single()
+            if (data) {
+              const newCustomer = {
+                id: data.id,
+                leadId: data.lead_id || undefined,
+                userId: data.user_id || '',
+                name: data.name,
+                company: data.company,
+                email: data.email || '',
+                phone: data.phone || '',
+                cnpj: data.cnpj || '',
+                createdAt: data.created_at,
+              }
+              const exists = get().customers.some(
+                (c) => c.id === newCustomer.id,
+              )
+              if (!exists) {
+                set((state) => ({
+                  customers: [newCustomer, ...state.customers],
+                }))
+              }
+            }
           }
-        }
+        }, 1000)
       }
     }
 
@@ -937,18 +912,15 @@ export const useDataStore = create<DataStore>((set, get) => ({
   addCustomer: async (cust) => {
     const dbCust: any = {
       user_id: cust.userId,
+      name: cust.name,
       company: cust.company,
-      cnpj: cust.cnpj,
-      contact: cust.contact,
-      email: cust.email,
-      phone: cust.phone,
-      status: cust.status,
-      country: cust.country,
-      city: cust.city,
-      site: cust.site,
-      facebook: cust.facebook,
-      instagram: cust.instagram,
-      notes: cust.notes,
+      email: cust.email || null,
+      phone: cust.phone || null,
+      cnpj: cust.cnpj || null,
+    }
+
+    if (cust.leadId) {
+      dbCust.lead_id = cust.leadId
     }
 
     const { data } = await supabase
@@ -973,16 +945,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
     const updatePayload: any = {}
     if (data.company !== undefined) updatePayload.company = data.company
     if (data.cnpj !== undefined) updatePayload.cnpj = data.cnpj
-    if (data.contact !== undefined) updatePayload.contact = data.contact
+    if (data.name !== undefined) updatePayload.name = data.name
     if (data.email !== undefined) updatePayload.email = data.email
     if (data.phone !== undefined) updatePayload.phone = data.phone
-    if (data.status !== undefined) updatePayload.status = data.status
-    if (data.country !== undefined) updatePayload.country = data.country
-    if (data.city !== undefined) updatePayload.city = data.city
-    if (data.site !== undefined) updatePayload.site = data.site
-    if (data.facebook !== undefined) updatePayload.facebook = data.facebook
-    if (data.instagram !== undefined) updatePayload.instagram = data.instagram
-    if (data.notes !== undefined) updatePayload.notes = data.notes
 
     if (Object.keys(updatePayload).length > 0) {
       await supabase.from('customers').update(updatePayload).eq('id', id)

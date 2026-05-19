@@ -85,7 +85,7 @@ export default function Layout() {
                   onError={() => setAvatar(null)}
                 />
               ) : (
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-sm shadow-inner shrink-0 uppercase">
+                <div className="w-10 h-10 bg-[#227b50]/10 rounded-full flex items-center justify-center text-[#227b50] font-bold text-sm shadow-inner shrink-0 uppercase">
                   {currentUser.name?.charAt(0) || 'U'}
                 </div>
               )}
@@ -102,7 +102,7 @@ export default function Layout() {
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="text-gray-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors shadow-sm ml-2"
+              className="text-gray-600 hover:text-[#227b50] hover:bg-[#227b50]/10 hover:border-[#227b50]/30 transition-colors shadow-sm ml-2"
             >
               <LogOut className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Sair</span>

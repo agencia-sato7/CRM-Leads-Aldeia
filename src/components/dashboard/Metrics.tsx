@@ -49,20 +49,7 @@ export function Metrics({
       maximumFractionDigits: 2,
     }).format(v)
 
-  const openOpps = relevantOpps.filter(
-    (o) => o.status === 'Aberta' || o.status === 'Em Negociação',
-  )
-  const openValBRL = openOpps.reduce((acc, o) => acc + o.value, 0)
-
   const cards = [
-    {
-      title: 'Orçamentos Abertos (Real BRL)',
-      value: formatValue(openValBRL),
-      icon: Wallet,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-100',
-      trend: 'Pipeline em aberto',
-    },
     {
       title: 'Orçamentos Fechados',
       value: formatValue(wonVal),
@@ -98,7 +85,7 @@ export function Metrics({
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((c, i) => (
         <div
           key={i}

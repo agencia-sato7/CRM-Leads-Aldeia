@@ -101,6 +101,7 @@ export default function Onboarding() {
     marketingContext: '',
     opportunityValue: 0,
     serviceName: '',
+    quantity: 1,
   })
 
   const wonOpps = opportunities.filter(
@@ -142,6 +143,7 @@ export default function Onboarding() {
         marketingContext: lead?.objectives || '',
         opportunityValue: opp.value || 0,
         serviceName: opp.service || '',
+        quantity: opp.quantity || 1,
       }))
     }
   }
@@ -161,6 +163,7 @@ export default function Onboarding() {
       marketingContext: '',
       opportunityValue: 0,
       serviceName: '',
+      quantity: 1,
     })
   }
 
@@ -496,12 +499,21 @@ export default function Onboarding() {
                   </SelectContent>
                 </Select>
                 {selectedOppId && (
-                  <div className="mt-3 flex gap-4 text-sm text-gray-600 bg-white p-3 rounded-lg border border-gray-100">
+                  <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-600 bg-white p-3 rounded-lg border border-gray-100">
                     <div>
                       <span className="font-semibold text-gray-800 block">
-                        Produto:
+                        Produtos:
                       </span>
                       {formData.serviceName || '-'}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">
+                        Quantidade:
+                      </span>
+                      {formData.quantity !== undefined &&
+                      formData.quantity !== null
+                        ? formData.quantity
+                        : 1}
                     </div>
                     <div>
                       <span className="font-semibold text-gray-800 block">

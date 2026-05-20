@@ -27,10 +27,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     })
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser()
     if (userError || !user) {
       throw new Error('Unauthorized: Invalid or expired token')
     }
@@ -86,8 +89,12 @@ Deno.serve(async (req: Request) => {
           <h2 style="font-size: 18px; color: #111827; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-top: 0;">Detalhes Comerciais</h2>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
             <tr>
-              <td style="padding: 8px 0; color: #6b7280; font-weight: bold; width: 140px;">Serviço:</td>
+              <td style="padding: 8px 0; color: #6b7280; font-weight: bold; width: 140px;">Produtos:</td>
               <td style="padding: 8px 0; color: #111827;">${onboarding.serviceName || 'Não informado'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Quantidade:</td>
+              <td style="padding: 8px 0; color: #111827;">${onboarding.quantity !== undefined && onboarding.quantity !== null ? onboarding.quantity : '1'}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Valor Fechado:</td>

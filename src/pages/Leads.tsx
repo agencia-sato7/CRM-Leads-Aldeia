@@ -15,6 +15,7 @@ import {
   Copy,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useToast } from '@/components/ui/use-toast'
 import {
   Tooltip,
   TooltipContent,
@@ -76,6 +77,7 @@ const formatPhone = (val: string, country: string) => {
 }
 
 export default function Leads() {
+  const { toast: shadcnToast } = useToast()
   const {
     leads,
     addLead,
@@ -258,6 +260,14 @@ export default function Leads() {
   }
 
   const handleAddMeeting = () => {
+    if (currentUser?.role === 'ADMIN') {
+      shadcnToast({
+        title:
+          'Acesso restrito: apenas um usuário comercial pode agendar uma visita.',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!editLead || !newMeetingDate) return
     const updatedMeetings = [
       {
@@ -290,6 +300,14 @@ export default function Leads() {
   }
 
   const handleScheduleMeeting = async () => {
+    if (currentUser?.role === 'ADMIN') {
+      shadcnToast({
+        title:
+          'Acesso restrito: apenas um usuário comercial pode agendar uma visita.',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!scheduleLead || !scheduleFormData.date) return
 
     const updatePayload: Partial<Lead> = {
@@ -1029,6 +1047,14 @@ export default function Leads() {
                               size="sm"
                               className="text-[10px] h-7 bg-[#227b50]/5 text-[#227b50] border-[#227b50]/20 hover:bg-[#227b50]/10 px-2"
                               onClick={() => {
+                                if (currentUser?.role === 'ADMIN') {
+                                  shadcnToast({
+                                    title:
+                                      'Acesso restrito: apenas um usuário comercial pode agendar uma visita.',
+                                    variant: 'destructive',
+                                  })
+                                  return
+                                }
                                 setScheduleLead(lead)
                                 setScheduleFormData({
                                   date: '',
@@ -1070,6 +1096,14 @@ export default function Leads() {
                                 size="sm"
                                 className="h-6 px-2 text-[10px] bg-white text-blue-600 border-blue-200 hover:bg-blue-50"
                                 onClick={() => {
+                                  if (currentUser?.role === 'ADMIN') {
+                                    shadcnToast({
+                                      title:
+                                        'Acesso restrito: apenas um usuário comercial pode agendar uma visita.',
+                                      variant: 'destructive',
+                                    })
+                                    return
+                                  }
                                   setScheduleLead(lead)
                                   setScheduleFormData({
                                     date:
@@ -1434,6 +1468,14 @@ export default function Leads() {
                       editLead.scheduledMeetingDate?.substring(0, 16) || ''
                     }
                     onChange={(e) => {
+                      if (currentUser?.role === 'ADMIN') {
+                        shadcnToast({
+                          title:
+                            'Acesso restrito: apenas um usuário comercial pode agendar uma visita.',
+                          variant: 'destructive',
+                        })
+                        return
+                      }
                       setEditLead({
                         ...editLead,
                         scheduledMeetingDate: e.target.value,

@@ -1118,9 +1118,9 @@ export default function Leads() {
                                 Reagendar
                               </Button>
                             ) : null}
-                            {(currentUser.role === 'ADMIN' ||
-                              lead.userId === currentUser.id ||
-                              !lead.userId) &&
+                            {currentUser.role !== 'ADMIN' &&
+                              (lead.userId === currentUser.id ||
+                                !lead.userId) &&
                               new Date(lead.scheduledMeetingDate) >=
                                 new Date() && (
                                 <>

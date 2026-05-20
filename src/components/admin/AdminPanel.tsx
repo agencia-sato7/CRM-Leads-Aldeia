@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { RevenueChart } from '@/components/dashboard/RevenueChart'
 import {
   Select,
   SelectContent,
@@ -135,6 +136,8 @@ export function AdminPanel() {
       </div>
 
       <div className="flex flex-col gap-6 mb-6">
+        <RevenueChart />
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />

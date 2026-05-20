@@ -39,7 +39,7 @@ export function Sidebar() {
         const { data: roleData } = await supabase
           .from('roles')
           .select('id')
-          .eq('name', currentUser.role)
+          .ilike('name', currentUser.role)
           .maybeSingle()
 
         if (roleData) {

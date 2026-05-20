@@ -4,9 +4,11 @@ import { useDataStore } from '@/stores/use-data-store'
 export function RequireRole({
   children,
   role,
+  roles,
 }: {
   children: React.ReactNode
-  role: string
+  role?: string
+  roles?: string[]
 }) {
   const { currentUser } = useDataStore()
 
@@ -14,7 +16,9 @@ export function RequireRole({
     return null
   }
 
-  if (currentUser.role !== role) {
+  const allowedRoles = roles || (role ? [role] : [])
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
     return <Navigate to="/" replace />
   }
 

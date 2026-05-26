@@ -176,6 +176,7 @@ export default function Leads() {
     notes: '',
     quantity: 1,
     product_id: '',
+    responded: false,
   })
 
   if (!currentUser) return null
@@ -220,6 +221,7 @@ export default function Leads() {
       notes: formData.notes,
       userId: currentUser.role === 'ADMIN' ? null : currentUser.id,
       quantity: formData.quantity,
+      responded: formData.responded,
     } as any
 
     if (formData.product_id) {
@@ -251,6 +253,7 @@ export default function Leads() {
         notes: '',
         quantity: 1,
         product_id: '',
+        responded: false,
       })
     } catch (err: any) {
       toast.error('Erro ao salvar lead', {
@@ -577,6 +580,23 @@ export default function Leads() {
                     disabled={!formData.product_id}
                   />
                 </div>
+                <div className="col-span-2 flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="responded-checkbox"
+                    checked={formData.responded}
+                    onChange={(e) =>
+                      setFormData({ ...formData, responded: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded border-gray-300 text-[#227b50] focus:ring-[#227b50]"
+                  />
+                  <label
+                    htmlFor="responded-checkbox"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Lead já foi respondido / contatado?
+                  </label>
+                </div>
               </div>
               <DialogFooter className="mt-6 pt-4 border-t border-gray-100">
                 <Button
@@ -733,6 +753,7 @@ export default function Leads() {
                   <TableHead>Empresa / Cliente</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Origem</TableHead>
+                  <TableHead className="text-center">Respondido</TableHead>
                   <TableHead>Objetivo Principal / Produtos</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1.5">
@@ -803,6 +824,23 @@ export default function Leads() {
                       >
                         {lead.origin}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {lead.responded ? (
+                        <Badge
+                          variant="outline"
+                          className="bg-green-50 text-green-700 border-green-200 shadow-none px-2 py-0 font-medium"
+                        >
+                          Sim
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="bg-gray-50 text-gray-500 border-gray-200 shadow-none px-2 py-0 font-medium"
+                        >
+                          Não
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="max-w-[150px] text-sm text-gray-600">
                       <div className="flex flex-col gap-1 items-start">
@@ -1388,6 +1426,14 @@ export default function Leads() {
                   </span>
                   <span className="text-gray-900">{viewLead.quantity}</span>
                 </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Respondido
+                  </span>
+                  <span className="text-gray-900 font-medium">
+                    {viewLead.responded ? 'Sim' : 'Não'}
+                  </span>
+                </div>
                 <div className="col-span-2">
                   <span className="font-semibold text-gray-500 block mb-1">
                     Objetivos
@@ -1648,6 +1694,23 @@ export default function Leads() {
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
+                </div>
+                <div className="col-span-2 flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="edit-responded-checkbox"
+                    checked={editLead.responded || false}
+                    onChange={(e) =>
+                      setEditLead({ ...editLead, responded: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded border-gray-300 text-[#227b50] focus:ring-[#227b50]"
+                  />
+                  <label
+                    htmlFor="edit-responded-checkbox"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Lead já foi respondido / contatado?
+                  </label>
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium">

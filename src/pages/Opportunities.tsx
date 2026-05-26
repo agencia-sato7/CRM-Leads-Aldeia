@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Search, Inbox, Handshake } from 'lucide-react'
+import { Plus, Search, Inbox, Handshake, Edit3 } from 'lucide-react'
 import { useDataStore, OppType, OppStatus } from '@/stores/use-data-store'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -47,6 +47,7 @@ export default function Opportunities() {
     users,
     addOpportunity,
     updateOpportunityStatus,
+    updateOpportunity,
     currentUser,
   } = useDataStore()
   const [isOpen, setIsOpen] = useState(false)
@@ -66,6 +67,7 @@ export default function Opportunities() {
     userId: '',
   })
 
+  const [editOpp, setEditOpp] = useState<any | null>(null)
   const lastProcessedLeadId = useRef<string>('')
 
   useEffect(() => {
@@ -520,7 +522,9 @@ export default function Opportunities() {
                 <TableHead>Produto</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="text-center">Fechamento</TableHead>
                 <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -544,7 +548,19 @@ export default function Opportunities() {
                       {users.find((u) => u.id === opp.userId)?.name || '-'}
                     </TableCell>
                     <TableCell className="font-bold text-gray-900 text-right text-base">
-                      {formatCurrency(opp.value)}
+                      <div className="flex flex-col items-end">
+                        <span>{formatCurrency(opp.value)}</span>
+                        {opp.amountPaid !== undefined && opp.amountPaid > 0 && (
+                          <span className="text-[10px] text-green-600 font-medium whitespace-nowrap">
+                            Pago: {formatCurrency(opp.amountPaid)}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center text-sm text-gray-500">
+                      {opp.closedDate
+                        ? new Date(opp.closedDate).toLocaleDateString('pt-BR')
+                        : '-'}
                     </TableCell>
                     <TableCell className="text-center">
                       <div
@@ -624,6 +640,27 @@ export default function Opportunities() {
                         </Select>
                       </div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setEditOpp({
+                            ...opp,
+                            amountPaidStr: opp.amountPaid
+                              ? (opp.amountPaid * 100).toString()
+                              : '',
+                            closedDateStr: opp.closedDate
+                              ? opp.closedDate.substring(0, 10)
+                              : '',
+                          })
+                        }
+                        className="text-gray-500 hover:text-[#227b50]"
+                        title="Editar"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 )
               })}
@@ -631,6 +668,74 @@ export default function Opportunities() {
           </Table>
         )}
       </div>
+
+      <Dialog
+        open={!!editOpp}
+        onOpenChange={(open) => !open && setEditOpp(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Oportunidade</DialogTitle>
+          </DialogHeader>
+          {editOpp && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="text-sm font-medium">
+                  Data de Fechamento
+                </label>
+                <Input
+                  type="date"
+                  value={editOpp.closedDateStr}
+                  onChange={(e: any) =>
+                    setEditOpp({ ...editOpp, closedDateStr: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Valor Pago</label>
+                <Input
+                  type="text"
+                  value={
+                    editOpp.amountPaidStr
+                      ? new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(Number(editOpp.amountPaidStr) / 100)
+                      : ''
+                  }
+                  onChange={(e: any) => {
+                    const digits = e.target.value.replace(/\D/g, '')
+                    setEditOpp({ ...editOpp, amountPaidStr: digits })
+                  }}
+                  placeholder="R$ 0,00"
+                />
+              </div>
+              <DialogFooter className="mt-6">
+                <Button variant="ghost" onClick={() => setEditOpp(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  className="bg-[#227b50] text-white hover:bg-[#1a5c3c]"
+                  onClick={async () => {
+                    await updateOpportunity(editOpp.id, {
+                      closedDate: editOpp.closedDateStr
+                        ? new Date(editOpp.closedDateStr).toISOString()
+                        : undefined,
+                      amountPaid: editOpp.amountPaidStr
+                        ? Number(editOpp.amountPaidStr) / 100
+                        : 0,
+                    })
+                    setEditOpp(null)
+                    toast.success('Oportunidade atualizada com sucesso!')
+                  }}
+                >
+                  Salvar
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

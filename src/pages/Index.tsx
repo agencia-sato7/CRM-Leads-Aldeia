@@ -25,8 +25,10 @@ import {
 import { format, isAfter, subDays } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
 
 export default function Index() {
+  const navigate = useNavigate()
   const {
     currentUser,
     users,
@@ -121,6 +123,14 @@ export default function Index() {
               className="bg-transparent text-sm outline-none w-auto text-gray-700 font-medium cursor-pointer"
             />
           </div>
+
+          <Button
+            variant="outline"
+            className="h-10 border-gray-200 text-gray-700 bg-white shadow-sm"
+            onClick={() => navigate('/monthly-results')}
+          >
+            Acessar Resultado Mensal
+          </Button>
 
           {currentUser.role === 'ADMIN' && (
             <div className="flex items-center gap-2">

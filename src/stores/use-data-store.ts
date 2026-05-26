@@ -57,6 +57,7 @@ export interface Lead {
   website?: string
   instagram?: string
   facebook?: string
+  responded?: boolean
 }
 
 export interface Message {
@@ -83,6 +84,8 @@ export interface Opportunity {
   createdAt: string
   updatedAt: string
   quantity: number
+  closedDate?: string
+  amountPaid?: number
 }
 
 export interface Category {
@@ -182,6 +185,7 @@ interface DataStore {
     opp: Omit<Opportunity, 'id' | 'createdAt' | 'updatedAt'>,
   ) => Promise<string>
   updateOpportunityStatus: (id: string, status: OppStatus) => Promise<void>
+  updateOpportunity: (id: string, data: Partial<Opportunity>) => Promise<void>
   addResource: (res: Omit<Resource, 'id'>) => Promise<void>
   removeResource: (id: string) => Promise<void>
   addMessage: (msg: Omit<Message, 'id' | 'createdAt' | 'read'>) => Promise<void>
@@ -327,6 +331,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         notes: lead.notes || '',
         scheduledMeetingDate: lead.scheduled_meeting_date || undefined,
         quantity: Number((lead as any).quantity) || 1,
+        responded: (lead as any).responded || false,
         product_id: (lead as any).product_id || undefined,
         estimatedValue: (lead as any).estimated_value
           ? Number((lead as any).estimated_value)
@@ -356,6 +361,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
         createdAt: opp.created_at,
         updatedAt: opp.updated_at,
         quantity: Number((opp as any).quantity || 1),
+        closedDate: (opp as any).closed_date || undefined,
+        amountPaid: Number((opp as any).amount_paid) || 0,
       }))
 
       const mappedMessages: Message[] = (messagesData || []).map((msg) => ({
@@ -510,6 +517,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       website: lead.website || null,
       instagram: lead.instagram || null,
       facebook: lead.facebook || null,
+      responded: lead.responded || false,
     } as any
 
     const { data, error } = await supabase
@@ -599,6 +607,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
     if (data.website !== undefined) updatePayload.website = data.website
     if (data.instagram !== undefined) updatePayload.instagram = data.instagram
     if (data.facebook !== undefined) updatePayload.facebook = data.facebook
+    if (data.responded !== undefined) updatePayload.responded = data.responded
 
     if (data.meetings && data.meetings.length > 0) {
       const currentLead = get().leads.find((l) => l.id === id)
@@ -702,6 +711,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       value: opp.value,
       status: opp.status,
       quantity: opp.quantity || 1,
+      closed_date: opp.closedDate || null,
+      amount_paid: opp.amountPaid || 0,
     }
 
     const { data } = await supabase
@@ -840,6 +851,29 @@ export const useDataStore = create<DataStore>((set, get) => ({
         leads: newLeads,
       }
     })
+  },
+
+  updateOpportunity: async (id, data) => {
+    const updatePayload: any = {}
+    if (data.status !== undefined) updatePayload.status = data.status
+    if (data.closedDate !== undefined)
+      updatePayload.closed_date = data.closedDate || null
+    if (data.amountPaid !== undefined)
+      updatePayload.amount_paid = data.amountPaid
+    if (data.service !== undefined) updatePayload.service = data.service
+    if (data.value !== undefined) updatePayload.value = data.value
+    if (data.quantity !== undefined) updatePayload.quantity = data.quantity
+
+    if (Object.keys(updatePayload).length > 0) {
+      await supabase.from('opportunities').update(updatePayload).eq('id', id)
+      set((state) => ({
+        opportunities: state.opportunities.map((o) =>
+          o.id === id
+            ? { ...o, ...data, updatedAt: new Date().toISOString() }
+            : o,
+        ),
+      }))
+    }
   },
 
   addMessage: async (msg) => {

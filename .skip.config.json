@@ -33,13 +33,15 @@
   ],
   "migrations": {
     "applied": [
-      "0001-pnpm-workspace-allow-builds"
+      "0001-pnpm-workspace-allow-builds",
+      "0002-package-json-pnpm-field",
+      "0003-ignore-generated-in-lint-format"
     ]
   },
   "deployment": {
-    "lastDevBuildRef": "855841b",
-    "lastProdBuildRef": "179fee9",
-    "publishedAt": "2026-05-19T21:23:17.507Z",
-    "lastPublishedRef": "b9582fe"
+    "lastDevBuildRef": "a15cad2",
+    "lastProdBuildRef": "be640fe",
+    "publishedAt": "2026-05-27T17:32:49.171Z",
+    "lastPublishedRef": "be640fe"
   }
 }

@@ -98,6 +98,7 @@ export default function Leads() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterOrigin, setFilterOrigin] = useState<string>('all')
   const [filterProduct, setFilterProduct] = useState<string>('all')
+  const [filterUser, setFilterUser] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [newMeetingDate, setNewMeetingDate] = useState('')
   const [newMeetingNotes, setNewMeetingNotes] = useState('')
@@ -107,6 +108,7 @@ export default function Leads() {
     filterStatus !== 'all' ||
     filterOrigin !== 'all' ||
     filterProduct !== 'all' ||
+    filterUser !== 'all' ||
     searchTerm !== ''
 
   const clearFilters = () => {
@@ -114,6 +116,7 @@ export default function Leads() {
     setFilterStatus('all')
     setFilterOrigin('all')
     setFilterProduct('all')
+    setFilterUser('all')
     setSearchTerm('')
   }
 
@@ -195,21 +198,41 @@ export default function Leads() {
 
   if (!currentUser) return null
 
-  const filteredLeads = leads.filter((l) => {
-    const matchRegion = filterRegion === 'all' || l.country === filterRegion
-    const matchStatus = filterStatus === 'all' || l.status === filterStatus
-    const matchOrigin = filterOrigin === 'all' || l.origin === filterOrigin
-    const matchProduct =
-      filterProduct === 'all' || l.product_id === filterProduct
-    const matchSearch =
-      searchTerm === '' ||
-      l.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      l.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      l.email.toLowerCase().includes(searchTerm.toLowerCase())
-    return (
-      matchRegion && matchStatus && matchOrigin && matchProduct && matchSearch
-    )
-  })
+  const filteredLeads = leads
+    .filter((l) => {
+      const matchRegion = filterRegion === 'all' || l.country === filterRegion
+      const matchStatus = filterStatus === 'all' || l.status === filterStatus
+      const matchOrigin = filterOrigin === 'all' || l.origin === filterOrigin
+      const matchProduct =
+        filterProduct === 'all' || l.product_id === filterProduct
+      const matchUser = filterUser === 'all' || l.userId === filterUser
+      const matchSearch =
+        searchTerm === '' ||
+        l.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        l.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        l.email.toLowerCase().includes(searchTerm.toLowerCase())
+      return (
+        matchRegion &&
+        matchStatus &&
+        matchOrigin &&
+        matchProduct &&
+        matchUser &&
+        matchSearch
+      )
+    })
+    .sort((a, b) => {
+      const statusPriority: Record<string, number> = {
+        Novo: 1,
+        Qualificado: 2,
+        'Em Negociação': 3,
+        Ganho: 4,
+        Perdido: 5,
+      }
+      const pA = statusPriority[a.status] || 99
+      const pB = statusPriority[b.status] || 99
+      if (pA !== pB) return pA - pB
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -683,6 +706,20 @@ export default function Leads() {
               <SelectItem value="TikTok">TikTok</SelectItem>
               <SelectItem value="Indicação">Indicação</SelectItem>
               <SelectItem value="Manual">Manual</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterUser} onValueChange={setFilterUser}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="w-3.5 h-3.5 mr-2" />
+              <SelectValue placeholder="Responsável" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Responsáveis</SelectItem>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={filterProduct} onValueChange={setFilterProduct}>

@@ -97,22 +97,51 @@ export default function Leads() {
   const [isOpen, setIsOpen] = useState(false)
   const [editLead, setEditLead] = useState<Lead | null>(null)
   const [viewLead, setViewLead] = useState<Lead | null>(null)
-  const [filterRegion, setFilterRegion] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterOrigin, setFilterOrigin] = useState<string>('all')
-  const [filterProduct, setFilterProduct] = useState<string>('all')
-  const [filterUser, setFilterUser] = useState<string>('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const filterRegion = searchParams.get('region') || 'all'
+  const filterStatus = searchParams.get('status') || 'all'
+  const filterOrigin = searchParams.get('origin') || 'all'
+  const filterProduct = searchParams.get('product') || 'all'
+  const filterUser = searchParams.get('user') || 'all'
+
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(
+    searchParams.get('search') || '',
+  )
   const [newMeetingDate, setNewMeetingDate] = useState('')
   const [newMeetingNotes, setNewMeetingNotes] = useState('')
 
-  const initialPage = parseInt(searchParams.get('page') || '1', 10)
-  const [currentPage, setCurrentPage] = useState(initialPage)
+  const currentPage = parseInt(searchParams.get('page') || '1', 10)
   const [totalCount, setTotalCount] = useState(0)
   const [paginatedLeads, setPaginatedLeads] = useState<Lead[]>([])
   const [isFetchingLeads, setIsFetchingLeads] = useState(false)
   const itemsPerPage = 10
+
+  const updateFilter = (key: string, value: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (value && value !== 'all') {
+        next.set(key, value)
+      } else {
+        next.delete(key)
+      }
+      next.set('page', '1')
+      return next
+    })
+  }
+
+  const setFilterRegion = (val: string) => updateFilter('region', val)
+  const setFilterStatus = (val: string) => updateFilter('status', val)
+  const setFilterOrigin = (val: string) => updateFilter('origin', val)
+  const setFilterProduct = (val: string) => updateFilter('product', val)
+  const setFilterUser = (val: string) => updateFilter('user', val)
+  const setCurrentPage = (val: number | ((p: number) => number)) => {
+    const newPage = typeof val === 'function' ? val(currentPage) : val
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('page', newPage.toString())
+      return next
+    })
+  }
 
   const hasActiveFilters =
     filterRegion !== 'all' ||
@@ -120,46 +149,55 @@ export default function Leads() {
     filterOrigin !== 'all' ||
     filterProduct !== 'all' ||
     filterUser !== 'all' ||
-    searchTerm !== ''
+    debouncedSearchTerm !== ''
 
   const clearFilters = () => {
-    setFilterRegion('all')
-    setFilterStatus('all')
-    setFilterOrigin('all')
-    setFilterProduct('all')
-    setFilterUser('all')
     setSearchTerm('')
     setDebouncedSearchTerm('')
-    setCurrentPage(1)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('region')
+      next.delete('status')
+      next.delete('origin')
+      next.delete('product')
+      next.delete('user')
+      next.delete('search')
+      next.set('page', '1')
+      return next
+    })
   }
 
   const [scheduleLead, setScheduleLead] = useState<Lead | null>(null)
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
+      if (searchTerm !== debouncedSearchTerm) {
+        setDebouncedSearchTerm(searchTerm)
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev)
+            if (searchTerm) {
+              next.set('search', searchTerm)
+            } else {
+              next.delete('search')
+            }
+            next.set('page', '1')
+            return next
+          },
+          { replace: true },
+        )
+      }
     }, 400)
     return () => clearTimeout(handler)
-  }, [searchTerm])
+  }, [searchTerm, debouncedSearchTerm, setSearchParams])
 
   useEffect(() => {
-    setCurrentPage(1)
-  }, [
-    filterRegion,
-    filterStatus,
-    filterOrigin,
-    filterUser,
-    filterProduct,
-    debouncedSearchTerm,
-  ])
-
-  useEffect(() => {
-    const currentUrlPage = searchParams.get('page')
-    if (currentPage.toString() !== currentUrlPage) {
-      searchParams.set('page', currentPage.toString())
-      setSearchParams(searchParams, { replace: true })
+    const searchFromUrl = searchParams.get('search') || ''
+    if (searchFromUrl !== debouncedSearchTerm) {
+      setSearchTerm(searchFromUrl)
+      setDebouncedSearchTerm(searchFromUrl)
     }
-  }, [currentPage, searchParams, setSearchParams])
+  }, [searchParams, debouncedSearchTerm])
 
   const fetchLeads = useCallback(async () => {
     setIsFetchingLeads(true)
@@ -266,8 +304,14 @@ export default function Leads() {
       const targetLead = leads.find((l) => l.id === idParam)
       if (targetLead) {
         setViewLead(targetLead)
-        searchParams.delete('id')
-        setSearchParams(searchParams, { replace: true })
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev)
+            next.delete('id')
+            return next
+          },
+          { replace: true },
+        )
       }
     }
   }, [searchParams, leads, setSearchParams])

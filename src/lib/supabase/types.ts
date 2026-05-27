@@ -146,6 +146,7 @@ export type Database = {
           responded: boolean | null
           scheduled_meeting_date: string | null
           status: string
+          status_priority: number | null
           user_id: string | null
           website: string | null
         }
@@ -171,6 +172,7 @@ export type Database = {
           responded?: boolean | null
           scheduled_meeting_date?: string | null
           status?: string
+          status_priority?: number | null
           user_id?: string | null
           website?: string | null
         }
@@ -196,6 +198,7 @@ export type Database = {
           responded?: boolean | null
           scheduled_meeting_date?: string | null
           status?: string
+          status_priority?: number | null
           user_id?: string | null
           website?: string | null
         }
@@ -841,6 +844,7 @@ export const Constants = {
 //   facebook: text (nullable)
 //   quantity: numeric (nullable, default: 1)
 //   responded: boolean (nullable)
+//   status_priority: integer (nullable, default: 1)
 // Table: meetings
 //   id: uuid (not null, default: gen_random_uuid())
 //   lead_id: uuid (nullable)
@@ -1331,6 +1335,24 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION sync_lead_status_priority()
+//   CREATE OR REPLACE FUNCTION public.sync_lead_status_priority()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     NEW.status_priority = CASE NEW.status
+//       WHEN 'Novo' THEN 1
+//       WHEN 'Qualificado' THEN 2
+//       WHEN 'Em Negociação' THEN 3
+//       WHEN 'Ganho' THEN 4
+//       WHEN 'Perdido' THEN 5
+//       ELSE 99
+//     END;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION update_opportunity_closed_date()
 //   CREATE OR REPLACE FUNCTION public.update_opportunity_closed_date()
 //    RETURNS trigger
@@ -1348,6 +1370,7 @@ export const Constants = {
 // --- TRIGGERS ---
 // Table: leads
 //   on_lead_status_change: CREATE TRIGGER on_lead_status_change AFTER INSERT OR UPDATE OF status ON public.leads FOR EACH ROW EXECUTE FUNCTION handle_lead_status_change()
+//   trigger_sync_lead_status_priority: CREATE TRIGGER trigger_sync_lead_status_priority BEFORE INSERT OR UPDATE OF status ON public.leads FOR EACH ROW EXECUTE FUNCTION sync_lead_status_priority()
 // Table: opportunities
 //   on_opportunity_status_change: CREATE TRIGGER on_opportunity_status_change AFTER INSERT OR UPDATE OF status ON public.opportunities FOR EACH ROW EXECUTE FUNCTION handle_opportunity_status_change()
 //   set_opportunities_updated_at: CREATE TRIGGER set_opportunities_updated_at BEFORE UPDATE ON public.opportunities FOR EACH ROW WHEN (((old.quantity IS DISTINCT FROM new.quantity) OR (old.value IS DISTINCT FROM new.value))) EXECUTE FUNCTION set_current_timestamp_updated_at()

@@ -14,7 +14,10 @@ import {
   Info,
   Eye,
   Copy,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
+import { useCallback } from 'react'
 import { toast } from 'sonner'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -100,8 +103,16 @@ export default function Leads() {
   const [filterProduct, setFilterProduct] = useState<string>('all')
   const [filterUser, setFilterUser] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [newMeetingDate, setNewMeetingDate] = useState('')
   const [newMeetingNotes, setNewMeetingNotes] = useState('')
+
+  const initialPage = parseInt(searchParams.get('page') || '1', 10)
+  const [currentPage, setCurrentPage] = useState(initialPage)
+  const [totalCount, setTotalCount] = useState(0)
+  const [paginatedLeads, setPaginatedLeads] = useState<Lead[]>([])
+  const [isFetchingLeads, setIsFetchingLeads] = useState(false)
+  const itemsPerPage = 10
 
   const hasActiveFilters =
     filterRegion !== 'all' ||
@@ -118,9 +129,128 @@ export default function Leads() {
     setFilterProduct('all')
     setFilterUser('all')
     setSearchTerm('')
+    setDebouncedSearchTerm('')
+    setCurrentPage(1)
   }
 
   const [scheduleLead, setScheduleLead] = useState<Lead | null>(null)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 400)
+    return () => clearTimeout(handler)
+  }, [searchTerm])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [
+    filterRegion,
+    filterStatus,
+    filterOrigin,
+    filterUser,
+    filterProduct,
+    debouncedSearchTerm,
+  ])
+
+  useEffect(() => {
+    const currentUrlPage = searchParams.get('page')
+    if (currentPage.toString() !== currentUrlPage) {
+      searchParams.set('page', currentPage.toString())
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [currentPage, searchParams, setSearchParams])
+
+  const fetchLeads = useCallback(async () => {
+    setIsFetchingLeads(true)
+    try {
+      let query = supabase
+        .from('leads')
+        .select('*, meetings(*)', { count: 'exact' })
+
+      if (filterRegion !== 'all') query = query.eq('country', filterRegion)
+      if (filterStatus !== 'all') query = query.eq('status', filterStatus)
+      if (filterOrigin !== 'all') query = query.eq('origin', filterOrigin)
+      if (filterUser !== 'all') query = query.eq('user_id', filterUser)
+      if (filterProduct !== 'all') query = query.eq('product_id', filterProduct)
+      if (debouncedSearchTerm) {
+        query = query.or(
+          `company.ilike.%${debouncedSearchTerm}%,contact.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`,
+        )
+      }
+
+      const from = (currentPage - 1) * itemsPerPage
+      const to = from + itemsPerPage - 1
+
+      query = query
+        .order('status_priority', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .range(from, to)
+
+      const { data, count, error } = await query
+
+      if (error) throw error
+
+      if (data) {
+        const mappedLeads: Lead[] = data.map((lead: any) => ({
+          id: lead.id,
+          userId: lead.user_id,
+          contact: lead.contact,
+          company: lead.company,
+          email: lead.email || '',
+          phone: lead.phone || '',
+          status: lead.status as LeadStatus,
+          country: lead.country as Country,
+          city: lead.city || '',
+          origin: lead.origin as LeadOrigin,
+          marketingStatus: lead.marketing_status || '',
+          objectives: lead.objectives || '',
+          notes: lead.notes || '',
+          scheduledMeetingDate: lead.scheduled_meeting_date || undefined,
+          quantity: Number(lead.quantity) || 1,
+          responded: lead.responded || false,
+          product_id: lead.product_id || undefined,
+          estimatedValue: lead.estimated_value
+            ? Number(lead.estimated_value)
+            : undefined,
+          cnpj: lead.cnpj || '',
+          website: lead.website || '',
+          instagram: lead.instagram || '',
+          facebook: lead.facebook || '',
+          createdAt: lead.created_at,
+          meetings: (lead.meetings || [])
+            .map((m: any) => ({
+              id: m.id,
+              date: m.date,
+              notes: m.notes || '',
+            }))
+            .sort(
+              (a: any, b: any) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime(),
+            ),
+        }))
+
+        setPaginatedLeads(mappedLeads)
+        setTotalCount(count || 0)
+      }
+    } catch (err) {
+      console.error('Error fetching leads:', err)
+    } finally {
+      setIsFetchingLeads(false)
+    }
+  }, [
+    currentPage,
+    filterRegion,
+    filterStatus,
+    filterOrigin,
+    filterUser,
+    filterProduct,
+    debouncedSearchTerm,
+  ])
+
+  useEffect(() => {
+    fetchLeads()
+  }, [fetchLeads])
   const [scheduleFormData, setScheduleFormData] = useState({
     date: '',
     notes: '',
@@ -198,42 +328,6 @@ export default function Leads() {
 
   if (!currentUser) return null
 
-  const filteredLeads = leads
-    .filter((l) => {
-      const matchRegion = filterRegion === 'all' || l.country === filterRegion
-      const matchStatus = filterStatus === 'all' || l.status === filterStatus
-      const matchOrigin = filterOrigin === 'all' || l.origin === filterOrigin
-      const matchProduct =
-        filterProduct === 'all' || l.product_id === filterProduct
-      const matchUser = filterUser === 'all' || l.userId === filterUser
-      const matchSearch =
-        searchTerm === '' ||
-        l.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.email.toLowerCase().includes(searchTerm.toLowerCase())
-      return (
-        matchRegion &&
-        matchStatus &&
-        matchOrigin &&
-        matchProduct &&
-        matchUser &&
-        matchSearch
-      )
-    })
-    .sort((a, b) => {
-      const statusPriority: Record<string, number> = {
-        Novo: 1,
-        Qualificado: 2,
-        'Em Negociação': 3,
-        Ganho: 4,
-        Perdido: 5,
-      }
-      const pA = statusPriority[a.status] || 99
-      const pB = statusPriority[b.status] || 99
-      if (pA !== pB) return pA - pB
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    })
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (
@@ -273,6 +367,7 @@ export default function Leads() {
       await addLead(payload)
       setIsOpen(false)
       toast.success('Lead salvo com sucesso!')
+      fetchLeads()
       setFormData({
         contact: '',
         company: '',
@@ -299,7 +394,7 @@ export default function Leads() {
     }
   }
 
-  const handleAddMeeting = () => {
+  const handleAddMeeting = async () => {
     if (currentUser?.role === 'ADMIN') {
       shadcnToast({
         title:
@@ -321,7 +416,7 @@ export default function Leads() {
     const newStatus =
       editLead.status === 'Novo' ? 'Qualificado' : editLead.status
 
-    updateLead(editLead.id, {
+    await updateLead(editLead.id, {
       meetings: updatedMeetings,
       scheduledMeetingDate: '',
       status: newStatus,
@@ -337,6 +432,7 @@ export default function Leads() {
     })
     setNewMeetingDate('')
     setNewMeetingNotes('')
+    fetchLeads()
   }
 
   const handleScheduleMeeting = async () => {
@@ -366,6 +462,7 @@ export default function Leads() {
     setScheduleLead(null)
     setScheduleFormData({ date: '', notes: '' })
     toast.success('Reunião agendada com sucesso!')
+    fetchLeads()
   }
 
   const handleConcludeMeeting = async () => {
@@ -391,6 +488,7 @@ export default function Leads() {
     setConcludeLead(null)
     setConcludeFormData({ notes: '' })
     toast.success('Reunião concluída com sucesso!')
+    fetchLeads()
   }
 
   const handleCancelMeeting = async (lead: Lead) => {
@@ -398,6 +496,7 @@ export default function Leads() {
       scheduledMeetingDate: '',
     })
     toast.success('Reunião cancelada.')
+    fetchLeads()
   }
 
   const getStatusColor = (status: LeadStatus) => {
@@ -775,7 +874,7 @@ export default function Leads() {
           )}
         </div>
 
-        {filteredLeads.length === 0 ? (
+        {paginatedLeads.length === 0 && !isFetchingLeads ? (
           <div className="py-12 text-center flex flex-col items-center justify-center">
             <div className="w-16 h-16 bg-[#227b50]/10 text-[#227b50] rounded-full flex items-center justify-center mb-4">
               <Inbox className="w-8 h-8" />
@@ -828,7 +927,7 @@ export default function Leads() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLeads.slice(0, 50).map((lead) => (
+                {paginatedLeads.map((lead) => (
                   <TableRow key={lead.id} className="hover:bg-gray-50/50 group">
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -1047,6 +1146,7 @@ export default function Leads() {
                               updatePayload.userId = currentUser.id
                             }
                             await updateLead(lead.id, updatePayload)
+                            fetchLeads()
                             if (v === 'Ganho') {
                               toast.success(
                                 'Parabéns! Cliente criado com sucesso a partir do lead ganho',
@@ -1088,9 +1188,12 @@ export default function Leads() {
                     </TableCell>
                     <TableCell className="text-center">
                       <button
-                        onClick={() =>
-                          updateLead(lead.id, { responded: !lead.responded })
-                        }
+                        onClick={async () => {
+                          await updateLead(lead.id, {
+                            responded: !lead.responded,
+                          })
+                          fetchLeads()
+                        }}
                         className="focus:outline-none"
                         title="Clique para alternar o status de resposta"
                       >
@@ -1284,6 +1387,52 @@ export default function Leads() {
                 ))}
               </TableBody>
             </Table>
+
+            <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-white">
+              <div className="text-sm text-gray-500">
+                Mostrando{' '}
+                <span className="font-medium">
+                  {totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+                </span>{' '}
+                a{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * itemsPerPage, totalCount)}
+                </span>{' '}
+                de <span className="font-medium">{totalCount}</span> leads
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || isFetchingLeads}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Anterior
+                </Button>
+                <div className="text-sm font-medium text-gray-700 px-2">
+                  Página {currentPage} de{' '}
+                  {Math.max(1, Math.ceil(totalCount / itemsPerPage))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((p) =>
+                      Math.min(Math.ceil(totalCount / itemsPerPage), p + 1),
+                    )
+                  }
+                  disabled={
+                    currentPage ===
+                      Math.max(1, Math.ceil(totalCount / itemsPerPage)) ||
+                    isFetchingLeads
+                  }
+                >
+                  Próximo
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -1494,10 +1643,11 @@ export default function Leads() {
                       type="checkbox"
                       id={`view-responded-${viewLead.id}`}
                       checked={viewLead.responded || false}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const val = e.target.checked
-                        updateLead(viewLead.id, { responded: val })
+                        await updateLead(viewLead.id, { responded: val })
                         setViewLead({ ...viewLead, responded: val })
+                        fetchLeads()
                       }}
                       className="w-4 h-4 rounded border-gray-300 text-[#227b50] focus:ring-[#227b50] cursor-pointer"
                     />
@@ -1874,9 +2024,10 @@ export default function Leads() {
                 )}
               </div>
               <Button
-                onClick={() => {
-                  updateLead(editLead.id, editLead)
+                onClick={async () => {
+                  await updateLead(editLead.id, editLead)
                   setEditLead(null)
+                  fetchLeads()
                 }}
                 className="w-full bg-[#227b50] hover:bg-[#1a5c3c] text-white"
                 disabled={

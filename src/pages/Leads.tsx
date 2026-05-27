@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Plus,
   Search,
@@ -77,6 +78,7 @@ const formatPhone = (val: string, country: string) => {
 }
 
 export default function Leads() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const { toast: shadcnToast } = useToast()
   const {
     leads,
@@ -124,6 +126,18 @@ export default function Leads() {
   const [concludeLead, setConcludeLead] = useState<Lead | null>(null)
   const [concludeFormData, setConcludeFormData] = useState({ notes: '' })
   const [expiredToastShown, setExpiredToastShown] = useState(false)
+
+  useEffect(() => {
+    const idParam = searchParams.get('id')
+    if (idParam && leads.length > 0) {
+      const targetLead = leads.find((l) => l.id === idParam)
+      if (targetLead) {
+        setViewLead(targetLead)
+        searchParams.delete('id')
+        setSearchParams(searchParams, { replace: true })
+      }
+    }
+  }, [searchParams, leads, setSearchParams])
 
   useEffect(() => {
     if (
@@ -753,7 +767,6 @@ export default function Leads() {
                   <TableHead>Empresa / Cliente</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Origem</TableHead>
-                  <TableHead className="text-center">Respondido</TableHead>
                   <TableHead>Objetivo Principal / Produtos</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1.5">
@@ -772,6 +785,7 @@ export default function Leads() {
                       </Tooltip>
                     </div>
                   </TableHead>
+                  <TableHead className="text-center">Respondido</TableHead>
                   <TableHead>Próxima Reunião</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -824,23 +838,6 @@ export default function Leads() {
                       >
                         {lead.origin}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {lead.responded ? (
-                        <Badge
-                          variant="outline"
-                          className="bg-green-50 text-green-700 border-green-200 shadow-none px-2 py-0 font-medium"
-                        >
-                          Sim
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="bg-gray-50 text-gray-500 border-gray-200 shadow-none px-2 py-0 font-medium"
-                        >
-                          Não
-                        </Badge>
-                      )}
                     </TableCell>
                     <TableCell className="max-w-[150px] text-sm text-gray-600">
                       <div className="flex flex-col gap-1 items-start">
@@ -1051,6 +1048,31 @@ export default function Leads() {
                           </SelectContent>
                         </Select>
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <button
+                        onClick={() =>
+                          updateLead(lead.id, { responded: !lead.responded })
+                        }
+                        className="focus:outline-none"
+                        title="Clique para alternar o status de resposta"
+                      >
+                        {lead.responded ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-green-50 text-green-700 border-green-200 shadow-none px-2 py-0 font-medium hover:bg-green-100 cursor-pointer"
+                          >
+                            Sim
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-gray-50 text-gray-500 border-gray-200 shadow-none px-2 py-0 font-medium hover:bg-gray-100 cursor-pointer"
+                          >
+                            Não
+                          </Badge>
+                        )}
+                      </button>
                     </TableCell>
                     <TableCell>
                       {lead.status === 'Perdido' ? (
@@ -1426,13 +1448,29 @@ export default function Leads() {
                   </span>
                   <span className="text-gray-900">{viewLead.quantity}</span>
                 </div>
-                <div>
+                <div className="flex flex-col">
                   <span className="font-semibold text-gray-500 block mb-1">
                     Respondido
                   </span>
-                  <span className="text-gray-900 font-medium">
-                    {viewLead.responded ? 'Sim' : 'Não'}
-                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <input
+                      type="checkbox"
+                      id={`view-responded-${viewLead.id}`}
+                      checked={viewLead.responded || false}
+                      onChange={(e) => {
+                        const val = e.target.checked
+                        updateLead(viewLead.id, { responded: val })
+                        setViewLead({ ...viewLead, responded: val })
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-[#227b50] focus:ring-[#227b50] cursor-pointer"
+                    />
+                    <label
+                      htmlFor={`view-responded-${viewLead.id}`}
+                      className="text-sm text-gray-900 font-medium cursor-pointer select-none"
+                    >
+                      {viewLead.responded ? 'Sim' : 'Não'}
+                    </label>
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <span className="font-semibold text-gray-500 block mb-1">

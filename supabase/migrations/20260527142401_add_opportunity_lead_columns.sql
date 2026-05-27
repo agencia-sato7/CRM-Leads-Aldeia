@@ -1,0 +1,3 @@
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS responded BOOLEAN DEFAULT false;
+ALTER TABLE public.opportunities ADD COLUMN IF NOT EXISTS closed_date TIMESTAMPTZ;
+ALTER TABLE public.opportunities ADD COLUMN IF NOT EXISTS amount_paid NUMERIC DEFAULT 0;

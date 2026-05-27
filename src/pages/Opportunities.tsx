@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Search, Inbox, Handshake, Edit3 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import {
+  Plus,
+  Search,
+  Inbox,
+  Handshake,
+  Edit3,
+  Filter,
+  XCircle,
+} from 'lucide-react'
 import { useDataStore, OppType, OppStatus } from '@/stores/use-data-store'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -53,6 +62,11 @@ export default function Opportunities() {
   const [isOpen, setIsOpen] = useState(false)
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+
+  const [filterUserId, setFilterUserId] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterProduct, setFilterProduct] = useState<string>('all')
+  const [searchLead, setSearchLead] = useState('')
 
   const [formData, setFormData] = useState({
     leadId: '',
@@ -121,6 +135,39 @@ export default function Opportunities() {
       opp.userId === currentUser.id ||
       !opp.userId,
   )
+
+  const uniqueServices = Array.from(
+    new Set(opportunities.map((o) => o.service).filter(Boolean)),
+  ).sort()
+
+  const hasActiveFilters =
+    filterUserId !== 'all' ||
+    filterStatus !== 'all' ||
+    filterProduct !== 'all' ||
+    searchLead !== ''
+
+  const clearFilters = () => {
+    setFilterUserId('all')
+    setFilterStatus('all')
+    setFilterProduct('all')
+    setSearchLead('')
+  }
+
+  const filteredOpps = visibleOpps.filter((opp) => {
+    const lead = leads.find((l) => l.id === opp.leadId)
+    const matchUser = filterUserId === 'all' || opp.userId === filterUserId
+    const matchStatus = filterStatus === 'all' || opp.status === filterStatus
+    const matchProduct =
+      filterProduct === 'all' ||
+      opp.service.toLowerCase().includes(filterProduct.toLowerCase())
+    const matchLead =
+      searchLead === '' ||
+      (lead &&
+        (lead.company.toLowerCase().includes(searchLead.toLowerCase()) ||
+          lead.contact.toLowerCase().includes(searchLead.toLowerCase())))
+
+    return matchUser && matchStatus && matchProduct && matchLead
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -492,7 +539,72 @@ export default function Opportunities() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {visibleOpps.length === 0 ? (
+        <div className="flex gap-4 mb-6 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar por empresa ou contato..."
+              className="pl-9"
+              value={searchLead}
+              onChange={(e) => setSearchLead(e.target.value)}
+            />
+          </div>
+          <Select value={filterUserId} onValueChange={setFilterUserId}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="w-3.5 h-3.5 mr-2" />
+              <SelectValue placeholder="Responsável" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Responsáveis</SelectItem>
+              {users
+                .filter((u) => u.role === 'COMMERCIAL' || u.role === 'ADMIN')
+                .map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="w-3.5 h-3.5 mr-2" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="Aguardando">Aguardando</SelectItem>
+              <SelectItem value="Aberta">Aberta</SelectItem>
+              <SelectItem value="Ganha">Ganha</SelectItem>
+              <SelectItem value="Perdida">Perdida</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterProduct} onValueChange={setFilterProduct}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="w-3.5 h-3.5 mr-2" />
+              <SelectValue placeholder="Produto/Serviço" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Produtos</SelectItem>
+              {uniqueServices.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              onClick={clearFilters}
+              className="text-gray-500 hover:text-gray-900"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Limpar Filtros
+            </Button>
+          )}
+        </div>
+
+        {filteredOpps.length === 0 ? (
           <div className="py-12 text-center flex flex-col items-center justify-center">
             <div className="w-16 h-16 bg-[#227b50]/10 text-[#227b50] rounded-full flex items-center justify-center mb-4">
               <Inbox className="w-8 h-8" />
@@ -528,13 +640,19 @@ export default function Opportunities() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleOpps.map((opp) => {
+              {filteredOpps.map((opp) => {
                 const lead = leads.find((l) => l.id === opp.leadId)
                 if (!lead) return null
                 return (
                   <TableRow key={opp.id} className="hover:bg-gray-50/50">
                     <TableCell className="font-medium text-gray-900">
-                      {lead.company}
+                      <Link
+                        to={`/leads?id=${lead.id}`}
+                        className="hover:text-[#227b50] hover:underline"
+                        title="Ver detalhes do lead"
+                      >
+                        {lead.company} {lead.contact ? `/ ${lead.contact}` : ''}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center font-semibold text-gray-600">
                       {opp.quantity || 1}

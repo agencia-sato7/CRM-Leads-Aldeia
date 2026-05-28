@@ -702,7 +702,6 @@ export default function Opportunities() {
               <TableRow>
                 <TableHead>Lead</TableHead>
                 <TableHead className="w-16 text-center">Qtd</TableHead>
-                <TableHead>Produto</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead className="text-center">Fechamento</TableHead>
@@ -761,17 +760,16 @@ export default function Opportunities() {
                     <TableCell className="text-center font-semibold text-gray-600">
                       {opp.quantity || 1}
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-900 font-medium">
-                        {opp.service}
-                      </div>
-                    </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {users.find((u) => u.id === opp.userId)?.name || '-'}
                     </TableCell>
                     <TableCell className="font-bold text-gray-900 text-right text-base">
                       <div className="flex flex-col items-end">
-                        <span>{formatCurrency(opp.value)}</span>
+                        <span>
+                          {!opp.value || opp.value === 0
+                            ? 'Sob Consulta'
+                            : formatCurrency(opp.value)}
+                        </span>
                         {opp.amountPaid !== undefined && opp.amountPaid > 0 && (
                           <span className="text-[10px] text-green-600 font-medium whitespace-nowrap">
                             Pago: {formatCurrency(opp.amountPaid)}

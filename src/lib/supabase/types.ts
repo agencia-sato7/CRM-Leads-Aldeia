@@ -1456,6 +1456,8 @@ export const Constants = {
 // Table: onboardings
 //   CREATE INDEX onboardings_opportunity_id_idx ON public.onboardings USING btree (opportunity_id)
 //   CREATE INDEX onboardings_user_id_idx ON public.onboardings USING btree (user_id)
+// Table: opportunities
+//   CREATE INDEX idx_opportunities_created_at ON public.opportunities USING btree (created_at)
 // Table: product_categories
 //   CREATE UNIQUE INDEX product_categories_name_key ON public.product_categories USING btree (name)
 // Table: products

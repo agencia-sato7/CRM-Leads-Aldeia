@@ -93,6 +93,7 @@ export default function Leads() {
     products,
     productCategories,
     users,
+    interestMappings,
   } = useDataStore()
   const [isOpen, setIsOpen] = useState(false)
   const [editLead, setEditLead] = useState<Lead | null>(null)
@@ -204,7 +205,7 @@ export default function Leads() {
     try {
       let query = supabase
         .from('leads')
-        .select('*, meetings(*)', { count: 'exact' })
+        .select('*, meetings(*), lead_products(*)', { count: 'exact' })
 
       if (filterRegion !== 'all') query = query.eq('country', filterRegion)
       if (filterStatus !== 'all') query = query.eq('status', filterStatus)
@@ -256,6 +257,12 @@ export default function Leads() {
           instagram: lead.instagram || '',
           facebook: lead.facebook || '',
           createdAt: lead.created_at,
+          categoryId: lead.category_id || undefined,
+          leadProducts: (lead.lead_products || []).map((lp: any) => ({
+            id: lp.id,
+            leadId: lp.lead_id,
+            productId: lp.product_id,
+          })),
           meetings: (lead.meetings || [])
             .map((m: any) => ({
               id: m.id,
@@ -636,9 +643,7 @@ export default function Leads() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">
-                    Produto de Interesse
-                  </label>
+                  <label className="text-sm font-medium">Interesse</label>
                   <Select
                     value={formData.product_id || undefined}
                     onValueChange={(v) => {
@@ -926,7 +931,7 @@ export default function Leads() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Origem</TableHead>
-                  <TableHead>Objetivo Principal / Produtos</TableHead>
+                  <TableHead>Objetivo Principal / Interesse</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1.5">
                       Status
@@ -1625,12 +1630,110 @@ export default function Leads() {
                 </div>
                 <div>
                   <span className="font-semibold text-gray-500 block mb-1">
-                    Produto de Interesse
+                    Interesse
                   </span>
                   <span className="text-gray-900">
                     {products.find((p) => p.id === viewLead.product_id)?.name ||
                       '-'}
                   </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Produtos Relacionados
+                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {viewLead.leadProducts &&
+                    viewLead.leadProducts.length > 0 ? (
+                      viewLead.leadProducts.map((lp) => {
+                        const p = products.find(
+                          (prod) => prod.id === lp.productId,
+                        )
+                        return p ? (
+                          <Badge
+                            key={lp.id}
+                            variant="outline"
+                            className="bg-gray-50 text-gray-700 font-normal"
+                          >
+                            {p.name}
+                          </Badge>
+                        ) : null
+                      })
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Produtos Recomendados
+                  </span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {(() => {
+                      const recommended = new Set<string>()
+
+                      if (viewLead.categoryId) {
+                        products
+                          .filter((p) => p.categoryId === viewLead.categoryId)
+                          .forEach((p) => recommended.add(p.id))
+                      }
+
+                      const textToSearch =
+                        `${viewLead.notes || ''} ${viewLead.objectives || ''}`.toLowerCase()
+                      const matches = interestMappings
+                        .filter((im) => {
+                          if (!im.termPattern) return false
+                          try {
+                            const regex = new RegExp(im.termPattern, 'i')
+                            return regex.test(textToSearch)
+                          } catch (e) {
+                            return textToSearch.includes(
+                              im.termPattern.toLowerCase(),
+                            )
+                          }
+                        })
+                        .sort((a, b) => b.priority - a.priority)
+
+                      matches.forEach((m) => {
+                        if (m.productId) recommended.add(m.productId)
+                        if (m.categoryId) {
+                          products
+                            .filter((p) => p.categoryId === m.categoryId)
+                            .forEach((p) => recommended.add(p.id))
+                        }
+                      })
+
+                      if (viewLead.product_id)
+                        recommended.delete(viewLead.product_id)
+                      if (viewLead.leadProducts) {
+                        viewLead.leadProducts.forEach((lp) =>
+                          recommended.delete(lp.productId),
+                        )
+                      }
+
+                      if (recommended.size === 0) {
+                        return (
+                          <span className="text-gray-400 text-sm">
+                            Nenhuma recomendação no momento.
+                          </span>
+                        )
+                      }
+
+                      return Array.from(recommended)
+                        .slice(0, 5)
+                        .map((id) => {
+                          const p = products.find((prod) => prod.id === id)
+                          return p ? (
+                            <Badge
+                              key={id}
+                              variant="secondary"
+                              className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 shadow-sm cursor-default"
+                            >
+                              ✨ {p.name}
+                            </Badge>
+                          ) : null
+                        })
+                    })()}
+                  </div>
                 </div>
                 <div>
                   <span className="font-semibold text-gray-500 block mb-1">
@@ -1772,9 +1875,7 @@ export default function Leads() {
                   />
                 </div>
                 <div className="col-span-1">
-                  <label className="text-sm font-medium">
-                    Produto de Interesse
-                  </label>
+                  <label className="text-sm font-medium">Interesse</label>
                   <Select
                     value={editLead.product_id || undefined}
                     disabled

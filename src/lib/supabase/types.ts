@@ -123,8 +123,45 @@ export type Database = {
           },
         ]
       }
+      lead_products: {
+        Row: {
+          created_at: string | null
+          id: string
+          lead_id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'lead_products_lead_id_fkey'
+            columns: ['lead_id']
+            isOneToOne: false
+            referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'lead_products_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       leads: {
         Row: {
+          category_id: string | null
           city: string | null
           cnpj: string | null
           company: string
@@ -151,6 +188,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          category_id?: string | null
           city?: string | null
           cnpj?: string | null
           company: string
@@ -177,6 +215,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          category_id?: string | null
           city?: string | null
           cnpj?: string | null
           company?: string
@@ -203,6 +242,13 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'leads_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'product_categories'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'leads_product_id_fkey'
             columns: ['product_id']
@@ -820,6 +866,11 @@ export const Constants = {
 //   category_id: uuid (not null)
 //   product_id: uuid (nullable)
 //   priority: integer (nullable, default: 0)
+// Table: lead_products
+//   id: uuid (not null, default: gen_random_uuid())
+//   lead_id: uuid (not null)
+//   product_id: uuid (not null)
+//   created_at: timestamp with time zone (nullable, default: now())
 // Table: leads
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
@@ -845,6 +896,7 @@ export const Constants = {
 //   quantity: numeric (nullable, default: 1)
 //   responded: boolean (nullable)
 //   status_priority: integer (nullable, default: 1)
+//   category_id: uuid (nullable)
 // Table: meetings
 //   id: uuid (not null, default: gen_random_uuid())
 //   lead_id: uuid (nullable)
@@ -950,7 +1002,13 @@ export const Constants = {
 //   FOREIGN KEY interest_mapping_category_id_fkey: FOREIGN KEY (category_id) REFERENCES product_categories(id)
 //   PRIMARY KEY interest_mapping_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY interest_mapping_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id)
+// Table: lead_products
+//   FOREIGN KEY lead_products_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+//   UNIQUE lead_products_lead_id_product_id_key: UNIQUE (lead_id, product_id)
+//   PRIMARY KEY lead_products_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY lead_products_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 // Table: leads
+//   FOREIGN KEY leads_category_id_fkey: FOREIGN KEY (category_id) REFERENCES product_categories(id)
 //   PRIMARY KEY leads_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY leads_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
 //   FOREIGN KEY leads_user_id_fkey: FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -1015,6 +1073,16 @@ export const Constants = {
 //   Policy "customers_commercial_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: ((user_id = auth.uid()) OR (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))))
 //     WITH CHECK: ((user_id = auth.uid()) OR (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))))
+// Table: lead_products
+//   Policy "authenticated_delete_lead_products" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_insert_lead_products" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_lead_products" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_lead_products" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: leads
 //   Policy "leads_insert" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: ((user_id = auth.uid()) OR (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'ADMIN'::text)))))
@@ -1381,6 +1449,10 @@ export const Constants = {
 //   CREATE UNIQUE INDEX brands_name_key ON public.brands USING btree (name)
 // Table: customers
 //   CREATE UNIQUE INDEX customers_lead_id_key ON public.customers USING btree (lead_id)
+// Table: lead_products
+//   CREATE INDEX idx_lead_products_lead_id ON public.lead_products USING btree (lead_id)
+//   CREATE INDEX idx_lead_products_product_id ON public.lead_products USING btree (product_id)
+//   CREATE UNIQUE INDEX lead_products_lead_id_product_id_key ON public.lead_products USING btree (lead_id, product_id)
 // Table: onboardings
 //   CREATE INDEX onboardings_opportunity_id_idx ON public.onboardings USING btree (opportunity_id)
 //   CREATE INDEX onboardings_user_id_idx ON public.onboardings USING btree (user_id)

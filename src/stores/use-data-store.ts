@@ -52,12 +52,14 @@ export interface Lead {
   scheduledMeetingDate?: string
   quantity: number
   product_id?: string
+  categoryId?: string
   estimatedValue?: number
   cnpj?: string
   website?: string
   instagram?: string
   facebook?: string
   responded?: boolean
+  leadProducts?: LeadProduct[]
 }
 
 export interface Message {
@@ -144,6 +146,20 @@ export interface Brand {
   createdAt: string
 }
 
+export interface LeadProduct {
+  id: string
+  leadId: string
+  productId: string
+}
+
+export interface InterestMapping {
+  id: number
+  termPattern: string
+  categoryId: string
+  productId?: string
+  priority: number
+}
+
 export interface ProductCategory {
   id: string
   name: string
@@ -174,6 +190,7 @@ interface DataStore {
   brands: Brand[]
   productCategories: ProductCategory[]
   products: Product[]
+  interestMappings: InterestMapping[]
 
   fetchInitialData: () => Promise<void>
   updateUser: (id: string, data: Partial<User>) => Promise<void>
@@ -232,6 +249,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   brands: [],
   productCategories: [],
   products: [],
+  interestMappings: [],
 
   fetchInitialData: async () => {
     try {
@@ -287,6 +305,10 @@ export const useDataStore = create<DataStore>((set, get) => ({
           .from('product_categories')
           .select('*')
           .order('name', { ascending: true }),
+        supabase
+          .from('interest_mapping')
+          .select('*')
+          .order('priority', { ascending: false }),
       ])
 
       const profiles = responses[0]?.data || []
@@ -302,6 +324,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       const brandsData = responses[10]?.data || []
       const productsData = responses[11]?.data || []
       const productCategoriesData = responses[12]?.data || []
+      const interestMappingsData = responses[13]?.data || []
 
       const mappedUsers: User[] = (profiles || []).map((p) => ({
         id: p.id,
@@ -333,6 +356,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         quantity: Number((lead as any).quantity) || 1,
         responded: (lead as any).responded || false,
         product_id: (lead as any).product_id || undefined,
+        categoryId: (lead as any).category_id || undefined,
         estimatedValue: (lead as any).estimated_value
           ? Number((lead as any).estimated_value)
           : undefined,
@@ -453,6 +477,16 @@ export const useDataStore = create<DataStore>((set, get) => ({
         createdAt: p.created_at,
       }))
 
+      const mappedInterestMappings: InterestMapping[] = (
+        interestMappingsData || []
+      ).map((im) => ({
+        id: im.id,
+        termPattern: im.term_pattern,
+        categoryId: im.category_id,
+        productId: im.product_id || undefined,
+        priority: im.priority || 0,
+      }))
+
       set({
         users: mappedUsers,
         currentUser,
@@ -467,6 +501,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         brands: mappedBrands,
         productCategories: mappedProductCategories,
         products: mappedProducts,
+        interestMappings: mappedInterestMappings,
       })
     } catch (error) {
       console.error('Failed to fetch initial data:', error)

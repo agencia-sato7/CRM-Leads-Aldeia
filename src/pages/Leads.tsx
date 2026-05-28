@@ -103,6 +103,8 @@ export default function Leads() {
   const filterOrigin = searchParams.get('origin') || 'all'
   const filterProduct = searchParams.get('product') || 'all'
   const filterUser = searchParams.get('user') || 'all'
+  const filterStartDate = searchParams.get('start_date') || ''
+  const filterEndDate = searchParams.get('end_date') || ''
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(
@@ -135,6 +137,8 @@ export default function Leads() {
   const setFilterOrigin = (val: string) => updateFilter('origin', val)
   const setFilterProduct = (val: string) => updateFilter('product', val)
   const setFilterUser = (val: string) => updateFilter('user', val)
+  const setFilterStartDate = (val: string) => updateFilter('start_date', val)
+  const setFilterEndDate = (val: string) => updateFilter('end_date', val)
   const setCurrentPage = (val: number | ((p: number) => number)) => {
     const newPage = typeof val === 'function' ? val(currentPage) : val
     setSearchParams((prev) => {
@@ -150,6 +154,8 @@ export default function Leads() {
     filterOrigin !== 'all' ||
     filterProduct !== 'all' ||
     filterUser !== 'all' ||
+    filterStartDate !== '' ||
+    filterEndDate !== '' ||
     debouncedSearchTerm !== ''
 
   const clearFilters = () => {
@@ -163,6 +169,8 @@ export default function Leads() {
       next.delete('product')
       next.delete('user')
       next.delete('search')
+      next.delete('start_date')
+      next.delete('end_date')
       next.set('page', '1')
       return next
     })
@@ -212,6 +220,10 @@ export default function Leads() {
       if (filterOrigin !== 'all') query = query.eq('origin', filterOrigin)
       if (filterUser !== 'all') query = query.eq('user_id', filterUser)
       if (filterProduct !== 'all') query = query.eq('product_id', filterProduct)
+      if (filterStartDate)
+        query = query.gte('created_at', `${filterStartDate}T00:00:00.000Z`)
+      if (filterEndDate)
+        query = query.lte('created_at', `${filterEndDate}T23:59:59.999Z`)
       if (debouncedSearchTerm) {
         query = query.or(
           `contact.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`,
@@ -290,6 +302,8 @@ export default function Leads() {
     filterOrigin,
     filterUser,
     filterProduct,
+    filterStartDate,
+    filterEndDate,
     debouncedSearchTerm,
   ])
 
@@ -792,6 +806,22 @@ export default function Leads() {
               className="pl-9"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 h-10 shadow-sm flex-shrink-0">
+            <CalendarDays className="w-4 h-4 text-gray-500" />
+            <input
+              type="date"
+              value={filterStartDate}
+              onChange={(e) => setFilterStartDate(e.target.value)}
+              className="bg-transparent text-sm outline-none w-auto text-gray-700 font-medium cursor-pointer"
+            />
+            <span className="text-gray-400 text-sm">até</span>
+            <input
+              type="date"
+              value={filterEndDate}
+              onChange={(e) => setFilterEndDate(e.target.value)}
+              className="bg-transparent text-sm outline-none w-auto text-gray-700 font-medium cursor-pointer"
             />
           </div>
           <Select value={filterStatus} onValueChange={setFilterStatus}>

@@ -590,6 +590,10 @@ export const useDataStore = create<DataStore>((set, get) => ({
       }
     }
     if (data.company !== undefined) updatePayload.company = data.company
+    if (data.contact !== undefined) {
+      updatePayload.contact = data.contact
+      updatePayload.company = data.contact
+    }
     if (data.origin !== undefined) updatePayload.origin = data.origin
     if (data.email !== undefined) updatePayload.email = data.email
     if (data.phone !== undefined) updatePayload.phone = data.phone

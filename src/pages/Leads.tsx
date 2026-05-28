@@ -213,7 +213,7 @@ export default function Leads() {
       if (filterProduct !== 'all') query = query.eq('product_id', filterProduct)
       if (debouncedSearchTerm) {
         query = query.or(
-          `company.ilike.%${debouncedSearchTerm}%,contact.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`,
+          `contact.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`,
         )
       }
 
@@ -352,7 +352,6 @@ export default function Leads() {
 
   const [formData, setFormData] = useState({
     contact: '',
-    company: '',
     email: '',
     phone: '',
     city: '',
@@ -374,17 +373,11 @@ export default function Leads() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (
-      !formData.contact ||
-      !formData.company ||
-      !formData.email ||
-      !formData.phone
-    )
-      return
+    if (!formData.contact || !formData.email || !formData.phone) return
 
     const payload = {
       contact: formData.contact,
-      company: formData.company,
+      company: formData.contact,
       email: formData.email,
       phone: formData.phone,
       city: formData.city,
@@ -414,7 +407,6 @@ export default function Leads() {
       fetchLeads()
       setFormData({
         contact: '',
-        company: '',
         email: '',
         phone: '',
         city: '',
@@ -582,19 +574,7 @@ export default function Leads() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 md:col-span-1">
-                  <label className="text-sm font-medium">
-                    Razão Social / Empresa
-                  </label>
-                  <Input
-                    required
-                    value={formData.company}
-                    onChange={(e) =>
-                      setFormData({ ...formData, company: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="col-span-2 md:col-span-1">
+                <div className="col-span-2">
                   <label className="text-sm font-medium">Nome do Contato</label>
                   <Input
                     required
@@ -783,7 +763,6 @@ export default function Leads() {
                   type="submit"
                   className="bg-[#227b50] hover:bg-[#1a5c3c] text-white w-full"
                   disabled={
-                    !formData.company.trim() ||
                     !formData.contact.trim() ||
                     !formData.email.trim() ||
                     !formData.phone.trim() ||
@@ -944,7 +923,7 @@ export default function Leads() {
             <Table>
               <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead>Empresa / Cliente</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Objetivo Principal / Produtos</TableHead>
@@ -976,7 +955,7 @@ export default function Leads() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="font-semibold text-gray-900">
-                          {lead.company}
+                          {lead.contact}
                         </div>
                         {lead.meetings.length > 0 &&
                         opportunities.some((o) => o.leadId === lead.id) ? (
@@ -999,7 +978,7 @@ export default function Leads() {
                         <span className="text-sm">
                           {lead.country === 'USA' ? '🇺🇸' : '🇧🇷'}
                         </span>
-                        {lead.city || lead.country} • {lead.contact}
+                        {lead.city || lead.country}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1605,12 +1584,6 @@ export default function Leads() {
               <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
                 <div>
                   <span className="font-semibold text-gray-500 block mb-1">
-                    Empresa
-                  </span>
-                  <span className="text-gray-900">{viewLead.company}</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-500 block mb-1">
                     Contato
                   </span>
                   <span className="text-gray-900">{viewLead.contact}</span>
@@ -1762,14 +1735,11 @@ export default function Leads() {
             <div className="space-y-6 mt-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">
-                    Razão Social / Empresa
-                  </label>
+                  <label className="text-sm font-medium">Nome do Contato</label>
                   <Input
-                    value={editLead.company}
-                    disabled
+                    value={editLead.contact}
                     onChange={(e) =>
-                      setEditLead({ ...editLead, company: e.target.value })
+                      setEditLead({ ...editLead, contact: e.target.value })
                     }
                   />
                 </div>
@@ -2075,7 +2045,7 @@ export default function Leads() {
                 }}
                 className="w-full bg-[#227b50] hover:bg-[#1a5c3c] text-white"
                 disabled={
-                  !editLead.company.trim() ||
+                  !editLead.contact.trim() ||
                   !editLead.email.trim() ||
                   !editLead.phone.trim() ||
                   !editLead.product_id ||

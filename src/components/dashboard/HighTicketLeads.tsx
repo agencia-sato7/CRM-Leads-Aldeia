@@ -48,11 +48,11 @@ export function HighTicketLeads({ region, userId, startDate, endDate }: any) {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-700 shadow-sm">
-                    {lead.company.charAt(0)}
+                    {lead.contact.charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <div className="font-bold text-gray-900 text-sm">
-                      {lead.company}
+                      {lead.contact}
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5 max-w-[200px] truncate">
                       {opp.service} • {opp.type}

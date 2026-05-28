@@ -193,6 +193,7 @@ interface DataStore {
   interestMappings: InterestMapping[]
 
   fetchInitialData: () => Promise<void>
+  fetchOpportunities: (startDate?: string, endDate?: string) => Promise<void>
   updateUser: (id: string, data: Partial<User>) => Promise<void>
   addLead: (
     lead: Omit<Lead, 'id' | 'createdAt' | 'meetings'>,
@@ -250,6 +251,34 @@ export const useDataStore = create<DataStore>((set, get) => ({
   productCategories: [],
   products: [],
   interestMappings: [],
+
+  fetchOpportunities: async (startDate?: string, endDate?: string) => {
+    let query = supabase
+      .from('opportunities')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (startDate) query = query.gte('created_at', `${startDate}T00:00:00.000Z`)
+    if (endDate) query = query.lte('created_at', `${endDate}T23:59:59.999Z`)
+
+    const { data: oppsData } = await query
+    if (oppsData) {
+      const mappedOpps: Opportunity[] = oppsData.map((opp) => ({
+        id: opp.id,
+        leadId: opp.lead_id || '',
+        userId: opp.user_id || '',
+        type: opp.type as OppType,
+        service: opp.service,
+        value: Number(opp.value),
+        status: opp.status as OppStatus,
+        createdAt: opp.created_at,
+        updatedAt: opp.updated_at,
+        quantity: Number((opp as any).quantity || 1),
+        closedDate: (opp as any).closed_date || undefined,
+        amountPaid: Number((opp as any).amount_paid) || 0,
+      }))
+      set({ opportunities: mappedOpps })
+    }
+  },
 
   fetchInitialData: async () => {
     try {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Plus,
   Search,
@@ -64,8 +64,28 @@ export default function Opportunities() {
     updateLead,
     interestMappings,
     currentUser,
+    fetchOpportunities,
   } = useDataStore()
   const [isOpen, setIsOpen] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const startDateParam = searchParams.get('startDate') || ''
+  const endDateParam = searchParams.get('endDate') || ''
+
+  useEffect(() => {
+    fetchOpportunities(startDateParam || undefined, endDateParam || undefined)
+  }, [startDateParam, endDateParam, fetchOpportunities])
+
+  const handleDateChange = (type: 'start' | 'end', value: string) => {
+    const newParams = new URLSearchParams(searchParams)
+    if (value) {
+      if (type === 'start') newParams.set('startDate', value)
+      if (type === 'end') newParams.set('endDate', value)
+    } else {
+      if (type === 'start') newParams.delete('startDate')
+      if (type === 'end') newParams.delete('endDate')
+    }
+    setSearchParams(newParams)
+  }
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -163,13 +183,16 @@ export default function Opportunities() {
     filterUserId !== 'all' ||
     filterStatus !== 'all' ||
     filterProduct !== 'all' ||
-    searchLead !== ''
+    searchLead !== '' ||
+    startDateParam !== '' ||
+    endDateParam !== ''
 
   const clearFilters = () => {
     setFilterUserId('all')
     setFilterStatus('all')
     setFilterProduct('all')
     setSearchLead('')
+    setSearchParams(new URLSearchParams())
   }
 
   const filteredOpps = visibleOpps.filter((opp) => {
@@ -185,7 +208,18 @@ export default function Opportunities() {
         (lead.company.toLowerCase().includes(searchLead.toLowerCase()) ||
           lead.contact.toLowerCase().includes(searchLead.toLowerCase())))
 
-    return matchUser && matchStatus && matchProduct && matchLead
+    const oppDate = opp.createdAt ? opp.createdAt.substring(0, 10) : ''
+    const matchStartDate = !startDateParam || oppDate >= startDateParam
+    const matchEndDate = !endDateParam || oppDate <= endDateParam
+
+    return (
+      matchUser &&
+      matchStatus &&
+      matchProduct &&
+      matchLead &&
+      matchStartDate &&
+      matchEndDate
+    )
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -558,12 +592,30 @@ export default function Opportunities() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex gap-4 mb-6 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
+        <div className="flex flex-col md:flex-row gap-4 mb-6 flex-wrap items-center">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 h-10 w-full md:w-auto shrink-0">
+            <CalendarDays className="w-4 h-4 text-gray-500 shrink-0" />
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 p-0 w-[110px]"
+                value={startDateParam}
+                onChange={(e) => handleDateChange('start', e.target.value)}
+              />
+              <span className="text-gray-400 text-sm">até</span>
+              <input
+                type="date"
+                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 p-0 w-[110px]"
+                value={endDateParam}
+                onChange={(e) => handleDateChange('end', e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="relative flex-1 min-w-[200px] w-full md:w-auto">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Buscar por empresa ou contato..."
-              className="pl-9"
+              className="pl-9 h-10"
               value={searchLead}
               onChange={(e) => setSearchLead(e.target.value)}
             />
@@ -598,7 +650,7 @@ export default function Opportunities() {
             </SelectContent>
           </Select>
           <Select value={filterProduct} onValueChange={setFilterProduct}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] h-10">
               <Filter className="w-3.5 h-3.5 mr-2" />
               <SelectValue placeholder="Produto/Serviço" />
             </SelectTrigger>

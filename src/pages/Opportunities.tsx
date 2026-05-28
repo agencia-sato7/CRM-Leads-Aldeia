@@ -88,6 +88,7 @@ export default function Opportunities() {
   const pageSize = 10
 
   const [viewLead, setViewLead] = useState<any | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -108,6 +109,7 @@ export default function Opportunities() {
   ])
 
   useEffect(() => {
+    setLoading(true)
     fetchOpportunities({
       startDate: startDateParam || undefined,
       endDate: endDateParam || undefined,
@@ -117,7 +119,7 @@ export default function Opportunities() {
       searchLead: debouncedSearchLead,
       page,
       pageSize,
-    })
+    }).finally(() => setLoading(false))
   }, [
     startDateParam,
     endDateParam,
@@ -722,7 +724,12 @@ export default function Opportunities() {
           )}
         </div>
 
-        {filteredOpps.length === 0 ? (
+        {loading ? (
+          <div className="py-12 flex flex-col items-center justify-center min-h-[300px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#227b50] mb-4"></div>
+            <p className="text-gray-500 text-sm">Carregando oportunidades...</p>
+          </div>
+        ) : filteredOpps.length === 0 ? (
           <div className="py-12 text-center flex flex-col items-center justify-center">
             <div className="w-16 h-16 bg-[#227b50]/10 text-[#227b50] rounded-full flex items-center justify-center mb-4">
               <Inbox className="w-8 h-8" />
@@ -747,194 +754,288 @@ export default function Opportunities() {
             </Button>
           </div>
         ) : (
-          <Table>
-            <TableHeader className="bg-gray-50">
-              <TableRow>
-                <TableHead>Lead</TableHead>
-                <TableHead>Responsável</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="text-center">Fechamento</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOpps.map((opp) => {
-                const lead = leads.find((l) => l.id === opp.leadId)
-                return (
-                  <TableRow key={opp.id} className="hover:bg-gray-50/50">
-                    <TableCell className="font-medium text-gray-900">
-                      {lead ? (
-                        <button
-                          onClick={async () => {
-                            setViewLead(lead)
-                            const { data } = await supabase
-                              .from('leads')
-                              .select('*, meetings(*), lead_products(*)')
-                              .eq('id', lead.id)
-                              .single()
-                            if (data) {
-                              setViewLead((prev: any) => {
-                                if (!prev || prev.id !== data.id) return prev
-                                return {
-                                  ...prev,
-                                  leadProducts: (data.lead_products || []).map(
-                                    (lp: any) => ({
+          <div className="space-y-4">
+            <Table>
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead>Lead</TableHead>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead className="text-center">Fechamento</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOpps.map((opp) => {
+                  const lead = leads.find((l) => l.id === opp.leadId)
+                  return (
+                    <TableRow key={opp.id} className="hover:bg-gray-50/50">
+                      <TableCell className="font-medium text-gray-900">
+                        {lead ? (
+                          <button
+                            onClick={async () => {
+                              setViewLead(lead)
+                              const { data } = await supabase
+                                .from('leads')
+                                .select('*, meetings(*), lead_products(*)')
+                                .eq('id', lead.id)
+                                .single()
+                              if (data) {
+                                setViewLead((prev: any) => {
+                                  if (!prev || prev.id !== data.id) return prev
+                                  return {
+                                    ...prev,
+                                    leadProducts: (
+                                      data.lead_products || []
+                                    ).map((lp: any) => ({
                                       id: lp.id,
                                       leadId: lp.lead_id,
                                       productId: lp.product_id,
-                                    }),
-                                  ),
-                                  meetings: (data.meetings || [])
-                                    .map((m: any) => ({
-                                      id: m.id,
-                                      date: m.date,
-                                      notes: m.notes || '',
-                                    }))
-                                    .sort(
-                                      (a: any, b: any) =>
-                                        new Date(b.date).getTime() -
-                                        new Date(a.date).getTime(),
-                                    ),
-                                }
+                                    })),
+                                    meetings: (data.meetings || [])
+                                      .map((m: any) => ({
+                                        id: m.id,
+                                        date: m.date,
+                                        notes: m.notes || '',
+                                      }))
+                                      .sort(
+                                        (a: any, b: any) =>
+                                          new Date(b.date).getTime() -
+                                          new Date(a.date).getTime(),
+                                      ),
+                                  }
+                                })
+                              }
+                            }}
+                            className="text-left hover:text-[#227b50] hover:underline focus:outline-none"
+                            title="Ver detalhes do lead"
+                          >
+                            {lead.contact || ''}
+                          </button>
+                        ) : (
+                          <span></span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {users.find((u) => u.id === opp.userId)?.name || '-'}
+                      </TableCell>
+                      <TableCell className="font-bold text-gray-900 text-right text-base">
+                        <div className="flex flex-col items-end">
+                          <span>
+                            {!opp.value || opp.value === 0
+                              ? 'Sob Consulta'
+                              : formatCurrency(opp.value)}
+                          </span>
+                          {opp.amountPaid !== undefined &&
+                            opp.amountPaid > 0 && (
+                              <span className="text-[10px] text-green-600 font-medium whitespace-nowrap">
+                                Pago: {formatCurrency(opp.amountPaid)}
+                              </span>
+                            )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center text-sm text-gray-500">
+                        {opp.closedDate
+                          ? new Date(opp.closedDate).toLocaleDateString('pt-BR')
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div
+                          className="inline-block"
+                          onClick={() => {
+                            const notOwnerBlock =
+                              opp.userId &&
+                              opp.userId !== currentUser.id &&
+                              currentUser.role !== 'ADMIN'
+                            const terminalBlock =
+                              opp.status === 'Ganha' ||
+                              opp.status === 'Perdida' ||
+                              (opp.status as string) === 'Fechado'
+
+                            if (terminalBlock) {
+                              toast.error('Ação Bloqueada', {
+                                description:
+                                  'Oportunidades ganhas ou perdidas não podem ter seu status alterado.',
+                              })
+                            } else if (notOwnerBlock) {
+                              toast.error('Ação Bloqueada', {
+                                description:
+                                  'Apenas o responsável ou um administrador pode alterar esta oportunidade.',
                               })
                             }
                           }}
-                          className="text-left hover:text-[#227b50] hover:underline focus:outline-none"
-                          title="Ver detalhes do lead"
                         >
-                          {lead.contact || ''}
-                        </button>
-                      ) : (
-                        <span></span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-500">
-                      {users.find((u) => u.id === opp.userId)?.name || '-'}
-                    </TableCell>
-                    <TableCell className="font-bold text-gray-900 text-right text-base">
-                      <div className="flex flex-col items-end">
-                        <span>
-                          {!opp.value || opp.value === 0
-                            ? 'Sob Consulta'
-                            : formatCurrency(opp.value)}
-                        </span>
-                        {opp.amountPaid !== undefined && opp.amountPaid > 0 && (
-                          <span className="text-[10px] text-green-600 font-medium whitespace-nowrap">
-                            Pago: {formatCurrency(opp.amountPaid)}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center text-sm text-gray-500">
-                      {opp.closedDate
-                        ? new Date(opp.closedDate).toLocaleDateString('pt-BR')
-                        : '-'}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div
-                        className="inline-block"
-                        onClick={() => {
-                          const notOwnerBlock =
-                            opp.userId &&
-                            opp.userId !== currentUser.id &&
-                            currentUser.role !== 'ADMIN'
-                          const terminalBlock =
-                            opp.status === 'Ganha' ||
-                            opp.status === 'Perdida' ||
-                            (opp.status as string) === 'Fechado'
-
-                          if (terminalBlock) {
-                            toast.error('Ação Bloqueada', {
-                              description:
-                                'Oportunidades ganhas ou perdidas não podem ter seu status alterado.',
-                            })
-                          } else if (notOwnerBlock) {
-                            toast.error('Ação Bloqueada', {
-                              description:
-                                'Apenas o responsável ou um administrador pode alterar esta oportunidade.',
-                            })
-                          }
-                        }}
-                      >
-                        <Select
-                          value={opp.status}
-                          disabled={
-                            (!!opp.userId &&
-                              opp.userId !== currentUser.id &&
-                              currentUser.role !== 'ADMIN') ||
-                            opp.status === 'Ganha' ||
-                            opp.status === 'Perdida' ||
-                            (opp.status as string) === 'Fechado'
-                          }
-                          onValueChange={async (v) => {
-                            await updateOpportunityStatus(
-                              opp.id,
-                              v as OppStatus,
-                            )
-                            if (v === 'Ganha') {
-                              toast.success(
-                                'Parabéns! Cliente criado com sucesso a partir da oportunidade ganha',
-                              )
-                            } else if (v === 'Perdida') {
-                              toast.info(
-                                'Oportunidade marcada como perdida e lead atualizado para Perdido.',
-                              )
+                          <Select
+                            value={opp.status}
+                            disabled={
+                              (!!opp.userId &&
+                                opp.userId !== currentUser.id &&
+                                currentUser.role !== 'ADMIN') ||
+                              opp.status === 'Ganha' ||
+                              opp.status === 'Perdida' ||
+                              (opp.status as string) === 'Fechado'
                             }
-                          }}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              'h-8 text-[10px] font-bold uppercase tracking-wide border-0 focus:ring-0 w-32 mx-auto',
-                              opp.status === 'Ganha' &&
-                                'bg-green-100 text-green-700',
-                              opp.status === 'Aberta' &&
-                                'bg-blue-100 text-blue-700',
-                              opp.status === 'Aguardando' &&
-                                'bg-yellow-100 text-yellow-700',
-                              opp.status === 'Perdida' &&
-                                'bg-red-100 text-red-700',
-                            )}
+                            onValueChange={async (v) => {
+                              await updateOpportunityStatus(
+                                opp.id,
+                                v as OppStatus,
+                              )
+                              if (v === 'Ganha') {
+                                toast.success(
+                                  'Parabéns! Cliente criado com sucesso a partir da oportunidade ganha',
+                                )
+                              } else if (v === 'Perdida') {
+                                toast.info(
+                                  'Oportunidade marcada como perdida e lead atualizado para Perdido.',
+                                )
+                              }
+                            }}
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Aguardando">
-                              Aguardando
-                            </SelectItem>
-                            <SelectItem value="Aberta">Aberta</SelectItem>
-                            <SelectItem value="Ganha">Ganha</SelectItem>
-                            <SelectItem value="Perdida">Perdida</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
+                            <SelectTrigger
+                              className={cn(
+                                'h-8 text-[10px] font-bold uppercase tracking-wide border-0 focus:ring-0 w-32 mx-auto',
+                                opp.status === 'Ganha' &&
+                                  'bg-green-100 text-green-700',
+                                opp.status === 'Aberta' &&
+                                  'bg-blue-100 text-blue-700',
+                                opp.status === 'Aguardando' &&
+                                  'bg-yellow-100 text-yellow-700',
+                                opp.status === 'Perdida' &&
+                                  'bg-red-100 text-red-700',
+                              )}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Aguardando">
+                                Aguardando
+                              </SelectItem>
+                              <SelectItem value="Aberta">Aberta</SelectItem>
+                              <SelectItem value="Ganha">Ganha</SelectItem>
+                              <SelectItem value="Perdida">Perdida</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setEditOpp({
+                              ...opp,
+                              amountPaidStr: opp.amountPaid
+                                ? (opp.amountPaid * 100).toString()
+                                : '',
+                              closedDateStr: opp.closedDate
+                                ? opp.closedDate.substring(0, 10)
+                                : '',
+                            })
+                          }
+                          className="text-gray-500 hover:text-[#227b50]"
+                          title="Editar"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-4">
+                <div className="flex flex-1 justify-between sm:hidden">
+                  <Button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Próxima
+                  </Button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Mostrando{' '}
+                      <span className="font-medium">
+                        {(page - 1) * pageSize + 1}
+                      </span>{' '}
+                      a{' '}
+                      <span className="font-medium">
+                        {Math.min(page * pageSize, totalOpportunities)}
+                      </span>{' '}
+                      de{' '}
+                      <span className="font-medium">{totalOpportunities}</span>{' '}
+                      resultados
+                    </p>
+                  </div>
+                  <div>
+                    <nav
+                      className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                      aria-label="Pagination"
+                    >
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setEditOpp({
-                            ...opp,
-                            amountPaidStr: opp.amountPaid
-                              ? (opp.amountPaid * 100).toString()
-                              : '',
-                            closedDateStr: opp.closedDate
-                              ? opp.closedDate.substring(0, 10)
-                              : '',
-                          })
-                        }
-                        className="text-gray-500 hover:text-[#227b50]"
-                        title="Editar"
+                        variant="outline"
+                        className="rounded-l-md rounded-r-none px-2 py-2 h-9"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <span className="sr-only">Anterior</span>
+                        <ChevronLeft className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                      {getPageNumbers().map((pageNum, idx) =>
+                        pageNum === '...' ? (
+                          <span
+                            key={`ellipsis-${idx}`}
+                            className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 bg-gray-50 focus:outline-offset-0 h-9"
+                          >
+                            ...
+                          </span>
+                        ) : (
+                          <Button
+                            key={`page-${pageNum}`}
+                            variant={page === pageNum ? 'default' : 'outline'}
+                            className={cn(
+                              'rounded-none px-4 py-2 text-sm font-semibold h-9',
+                              page === pageNum
+                                ? 'bg-[#227b50] text-white hover:bg-[#1a5c3c] z-10'
+                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0',
+                            )}
+                            onClick={() => setPage(pageNum as number)}
+                          >
+                            {pageNum}
+                          </Button>
+                        ),
+                      )}
+                      <Button
+                        variant="outline"
+                        className="rounded-l-none rounded-r-md px-2 py-2 h-9"
+                        onClick={() =>
+                          setPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={page === totalPages}
+                      >
+                        <span className="sr-only">Próxima</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

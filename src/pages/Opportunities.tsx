@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   Plus,
@@ -56,7 +56,6 @@ import { cn } from '@/lib/utils'
 export default function Opportunities() {
   const {
     opportunities,
-    totalOpportunities,
     leads,
     products,
     productCategories,
@@ -68,7 +67,6 @@ export default function Opportunities() {
     updateLead,
     interestMappings,
     currentUser,
-    fetchOpportunities,
   } = useDataStore()
   const [isOpen, setIsOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -108,18 +106,74 @@ export default function Opportunities() {
     debouncedSearchLead,
   ])
 
-  useEffect(() => {
+  const [localOpps, setLocalOpps] = useState<any[]>([])
+  const [localTotal, setLocalTotal] = useState(0)
+
+  const fetchLocalOpportunities = useCallback(async () => {
     setLoading(true)
-    fetchOpportunities({
-      startDate: startDateParam || undefined,
-      endDate: endDateParam || undefined,
-      statusFilter: filterStatus,
-      userId: filterUserId,
-      productFilter: filterProduct,
-      searchLead: debouncedSearchLead,
-      page,
-      pageSize,
-    }).finally(() => setLoading(false))
+    try {
+      let query = supabase
+        .from('opportunities')
+        .select('*, leads!inner(company, contact)', { count: 'exact' })
+
+      if (startDateParam) {
+        query = query.gte('created_at', `${startDateParam}T00:00:00.000Z`)
+      }
+      if (endDateParam) {
+        query = query.lte('created_at', `${endDateParam}T23:59:59.999Z`)
+      }
+      if (filterStatus !== 'all') {
+        if (filterStatus === 'active') {
+          query = query.in('status', ['Aguardando', 'Aberta'])
+        } else {
+          query = query.eq('status', filterStatus)
+        }
+      }
+      if (filterUserId !== 'all') {
+        query = query.eq('user_id', filterUserId)
+      }
+      if (filterProduct !== 'all') {
+        query = query.eq('service', filterProduct)
+      }
+      if (debouncedSearchLead) {
+        query = query.or(
+          `company.ilike.%${debouncedSearchLead}%,contact.ilike.%${debouncedSearchLead}%`,
+          { foreignTable: 'leads' },
+        )
+      }
+
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+
+      const { data, count, error } = await query
+        .range(from, to)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      const formattedData = (data || []).map((d: any) => ({
+        id: d.id,
+        leadId: d.lead_id,
+        userId: d.user_id,
+        type: d.type,
+        service: d.service,
+        value: d.value,
+        status: d.status,
+        quantity: d.quantity,
+        amountPaid: d.amount_paid,
+        closedDate: d.closed_date,
+        leadNeeds: d.lead_needs,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }))
+
+      setLocalOpps(formattedData)
+      setLocalTotal(count || 0)
+    } catch (err) {
+      console.error('Error fetching opportunities:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [
     startDateParam,
     endDateParam,
@@ -128,8 +182,14 @@ export default function Opportunities() {
     filterProduct,
     debouncedSearchLead,
     page,
-    fetchOpportunities,
+    pageSize,
   ])
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchLocalOpportunities()
+    }
+  }, [fetchLocalOpportunities, currentUser])
 
   const handleDateChange = (type: 'start' | 'end', value: string) => {
     const newParams = new URLSearchParams(searchParams)
@@ -220,6 +280,7 @@ export default function Opportunities() {
     new Set(
       [
         ...products.map((p) => p.name),
+        ...localOpps.map((o) => o.service),
         ...opportunities.map((o) => o.service),
       ].filter(Boolean),
     ),
@@ -241,8 +302,8 @@ export default function Opportunities() {
     setSearchParams(new URLSearchParams())
   }
 
-  const filteredOpps = opportunities
-  const totalPages = Math.max(1, Math.ceil(totalOpportunities / pageSize))
+  const filteredOpps = localOpps
+  const totalPages = Math.max(1, Math.ceil(localTotal / pageSize))
 
   const getPageNumbers = () => {
     const pages = []
@@ -285,6 +346,7 @@ export default function Opportunities() {
         formData.userId ||
         (currentUser.role === 'ADMIN' ? null : currentUser.id),
     } as any)
+    fetchLocalOpportunities()
     setIsOpen(false)
     setFormData({
       leadId: '',
@@ -881,6 +943,7 @@ export default function Opportunities() {
                                 opp.id,
                                 v as OppStatus,
                               )
+                              fetchLocalOpportunities()
                               if (v === 'Ganha') {
                                 toast.success(
                                   'Parabéns! Cliente criado com sucesso a partir da oportunidade ganha',
@@ -945,96 +1008,93 @@ export default function Opportunities() {
               </TableBody>
             </Table>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-4">
-                <div className="flex flex-1 justify-between sm:hidden">
-                  <Button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Próxima
-                  </Button>
+            <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-4 mt-4">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <Button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  Anterior
+                </Button>
+                <Button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || totalPages === 0}
+                  variant="outline"
+                  size="sm"
+                >
+                  Próxima
+                </Button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Mostrando{' '}
+                    <span className="font-medium">
+                      {localTotal === 0 ? 0 : (page - 1) * pageSize + 1}
+                    </span>{' '}
+                    a{' '}
+                    <span className="font-medium">
+                      {Math.min(page * pageSize, localTotal)}
+                    </span>{' '}
+                    de <span className="font-medium">{localTotal}</span>{' '}
+                    resultados
+                  </p>
                 </div>
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Mostrando{' '}
-                      <span className="font-medium">
-                        {(page - 1) * pageSize + 1}
-                      </span>{' '}
-                      a{' '}
-                      <span className="font-medium">
-                        {Math.min(page * pageSize, totalOpportunities)}
-                      </span>{' '}
-                      de{' '}
-                      <span className="font-medium">{totalOpportunities}</span>{' '}
-                      resultados
-                    </p>
-                  </div>
-                  <div>
-                    <nav
-                      className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-                      aria-label="Pagination"
+                <div>
+                  <nav
+                    className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                    aria-label="Pagination"
+                  >
+                    <Button
+                      variant="outline"
+                      className="rounded-l-md rounded-r-none px-2 py-2 h-9"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
                     >
-                      <Button
-                        variant="outline"
-                        className="rounded-l-md rounded-r-none px-2 py-2 h-9"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                      >
-                        <span className="sr-only">Anterior</span>
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      {getPageNumbers().map((pageNum, idx) =>
-                        pageNum === '...' ? (
-                          <span
-                            key={`ellipsis-${idx}`}
-                            className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 bg-gray-50 focus:outline-offset-0 h-9"
-                          >
-                            ...
-                          </span>
-                        ) : (
-                          <Button
-                            key={`page-${pageNum}`}
-                            variant={page === pageNum ? 'default' : 'outline'}
-                            className={cn(
-                              'rounded-none px-4 py-2 text-sm font-semibold h-9',
-                              page === pageNum
-                                ? 'bg-[#227b50] text-white hover:bg-[#1a5c3c] z-10'
-                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0',
-                            )}
-                            onClick={() => setPage(pageNum as number)}
-                          >
-                            {pageNum}
-                          </Button>
-                        ),
-                      )}
-                      <Button
-                        variant="outline"
-                        className="rounded-l-none rounded-r-md px-2 py-2 h-9"
-                        onClick={() =>
-                          setPage((p) => Math.min(totalPages, p + 1))
-                        }
-                        disabled={page === totalPages}
-                      >
-                        <span className="sr-only">Próxima</span>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </nav>
-                  </div>
+                      <span className="sr-only">Anterior</span>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {getPageNumbers().map((pageNum, idx) =>
+                      pageNum === '...' ? (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 bg-gray-50 focus:outline-offset-0 h-9"
+                        >
+                          ...
+                        </span>
+                      ) : (
+                        <Button
+                          key={`page-${pageNum}`}
+                          variant={page === pageNum ? 'default' : 'outline'}
+                          className={cn(
+                            'rounded-none px-4 py-2 text-sm font-semibold h-9',
+                            page === pageNum
+                              ? 'bg-[#227b50] text-white hover:bg-[#1a5c3c] z-10'
+                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0',
+                          )}
+                          onClick={() => setPage(pageNum as number)}
+                        >
+                          {pageNum}
+                        </Button>
+                      ),
+                    )}
+                    <Button
+                      variant="outline"
+                      className="rounded-l-none rounded-r-md px-2 py-2 h-9"
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={page === totalPages || totalPages === 0}
+                    >
+                      <span className="sr-only">Próxima</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </nav>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
@@ -1357,6 +1417,7 @@ export default function Opportunities() {
                         : 0,
                     })
                     setEditOpp(null)
+                    fetchLocalOpportunities()
                     toast.success('Oportunidade atualizada com sucesso!')
                   }}
                 >

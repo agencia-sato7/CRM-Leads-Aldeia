@@ -8,7 +8,11 @@ import {
   Edit3,
   Filter,
   XCircle,
+  CalendarDays,
+  CheckCircle2,
 } from 'lucide-react'
+import { format } from 'date-fns'
+import { supabase } from '@/lib/supabase/client'
 import { useDataStore, OppType, OppStatus } from '@/stores/use-data-store'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -57,6 +61,8 @@ export default function Opportunities() {
     addOpportunity,
     updateOpportunityStatus,
     updateOpportunity,
+    updateLead,
+    interestMappings,
     currentUser,
   } = useDataStore()
   const [isOpen, setIsOpen] = useState(false)
@@ -67,6 +73,19 @@ export default function Opportunities() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterProduct, setFilterProduct] = useState<string>('all')
   const [searchLead, setSearchLead] = useState('')
+
+  const [viewLead, setViewLead] = useState<any | null>(null)
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      Novo: 'bg-blue-100 text-blue-700',
+      Qualificado: 'bg-yellow-100 text-yellow-700',
+      'Em Negociação': 'bg-purple-100 text-purple-700',
+      Ganho: 'bg-green-100 text-green-700',
+      Perdido: 'bg-red-100 text-red-700',
+    }
+    return colors[status] || 'bg-gray-100 text-gray-700'
+  }
 
   const [formData, setFormData] = useState({
     leadId: '',
@@ -646,13 +665,46 @@ export default function Opportunities() {
                 return (
                   <TableRow key={opp.id} className="hover:bg-gray-50/50">
                     <TableCell className="font-medium text-gray-900">
-                      <Link
-                        to={`/leads?id=${lead.id}`}
-                        className="hover:text-[#227b50] hover:underline"
+                      <button
+                        onClick={async () => {
+                          setViewLead(lead)
+                          const { data } = await supabase
+                            .from('leads')
+                            .select('*, meetings(*), lead_products(*)')
+                            .eq('id', lead.id)
+                            .single()
+                          if (data) {
+                            setViewLead((prev: any) => {
+                              if (!prev || prev.id !== data.id) return prev
+                              return {
+                                ...prev,
+                                leadProducts: (data.lead_products || []).map(
+                                  (lp: any) => ({
+                                    id: lp.id,
+                                    leadId: lp.lead_id,
+                                    productId: lp.product_id,
+                                  }),
+                                ),
+                                meetings: (data.meetings || [])
+                                  .map((m: any) => ({
+                                    id: m.id,
+                                    date: m.date,
+                                    notes: m.notes || '',
+                                  }))
+                                  .sort(
+                                    (a: any, b: any) =>
+                                      new Date(b.date).getTime() -
+                                      new Date(a.date).getTime(),
+                                  ),
+                              }
+                            })
+                          }
+                        }}
+                        className="text-left hover:text-[#227b50] hover:underline focus:outline-none"
                         title="Ver detalhes do lead"
                       >
                         {lead.company} {lead.contact ? `/ ${lead.contact}` : ''}
-                      </Link>
+                      </button>
                     </TableCell>
                     <TableCell className="text-center font-semibold text-gray-600">
                       {opp.quantity || 1}
@@ -786,6 +838,267 @@ export default function Opportunities() {
           </Table>
         )}
       </div>
+
+      <Dialog
+        open={!!viewLead}
+        onOpenChange={(open) => !open && setViewLead(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              Detalhes do Lead
+              {viewLead && (
+                <Badge
+                  className={cn(
+                    'border-0 font-medium px-2.5 py-0.5 text-xs shadow-none',
+                    getStatusColor(viewLead.status),
+                  )}
+                >
+                  {viewLead.status}
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {viewLead && (
+            <div className="space-y-6 mt-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Contato
+                  </span>
+                  <span className="text-gray-900">{viewLead.contact}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    E-mail
+                  </span>
+                  <span className="text-gray-900">{viewLead.email || '-'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Telefone
+                  </span>
+                  <span className="text-gray-900">{viewLead.phone || '-'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    País/Cidade
+                  </span>
+                  <span className="text-gray-900">
+                    {viewLead.country}{' '}
+                    {viewLead.city ? `- ${viewLead.city}` : ''}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Origem
+                  </span>
+                  <span className="text-gray-900">{viewLead.origin}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Status
+                  </span>
+                  <span className="text-gray-900 font-medium">
+                    {viewLead.status}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Interesse
+                  </span>
+                  <span className="text-gray-900">
+                    {products?.find((p) => p.id === viewLead.product_id)
+                      ?.name || '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Produtos Relacionados
+                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {viewLead.leadProducts &&
+                    viewLead.leadProducts.length > 0 ? (
+                      viewLead.leadProducts.map((lp: any) => {
+                        const p = products?.find(
+                          (prod) => prod.id === lp.productId,
+                        )
+                        return p ? (
+                          <Badge
+                            key={lp.id}
+                            variant="outline"
+                            className="bg-gray-50 text-gray-700 font-normal"
+                          >
+                            {p.name}
+                          </Badge>
+                        ) : null
+                      })
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Produtos Recomendados
+                  </span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {(() => {
+                      const recommended = new Set<string>()
+
+                      if (viewLead.categoryId) {
+                        products
+                          ?.filter((p) => p.categoryId === viewLead.categoryId)
+                          .forEach((p) => recommended.add(p.id))
+                      }
+
+                      const textToSearch =
+                        `${viewLead.notes || ''} ${viewLead.objectives || ''}`.toLowerCase()
+                      const matches = (interestMappings || [])
+                        .filter((im: any) => {
+                          if (!im.termPattern) return false
+                          try {
+                            const regex = new RegExp(im.termPattern, 'i')
+                            return regex.test(textToSearch)
+                          } catch (e) {
+                            return textToSearch.includes(
+                              im.termPattern.toLowerCase(),
+                            )
+                          }
+                        })
+                        .sort((a: any, b: any) => b.priority - a.priority)
+
+                      matches.forEach((m: any) => {
+                        if (m.productId) recommended.add(m.productId)
+                        if (m.categoryId) {
+                          products
+                            ?.filter((p) => p.categoryId === m.categoryId)
+                            .forEach((p) => recommended.add(p.id))
+                        }
+                      })
+
+                      if (viewLead.product_id)
+                        recommended.delete(viewLead.product_id)
+                      if (viewLead.leadProducts) {
+                        viewLead.leadProducts.forEach((lp: any) =>
+                          recommended.delete(lp.productId),
+                        )
+                      }
+
+                      if (recommended.size === 0) {
+                        return (
+                          <span className="text-gray-400 text-sm">
+                            Nenhuma recomendação no momento.
+                          </span>
+                        )
+                      }
+
+                      return Array.from(recommended)
+                        .slice(0, 5)
+                        .map((id) => {
+                          const p = products?.find((prod) => prod.id === id)
+                          return p ? (
+                            <Badge
+                              key={id}
+                              variant="secondary"
+                              className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 shadow-sm cursor-default"
+                            >
+                              ✨ {p.name}
+                            </Badge>
+                          ) : null
+                        })
+                    })()}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Valor Estimado
+                  </span>
+                  <span className="text-gray-900">
+                    {viewLead.estimatedValue
+                      ? new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(viewLead.estimatedValue)
+                      : '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Quantidade
+                  </span>
+                  <span className="text-gray-900">{viewLead.quantity}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Respondido
+                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <input
+                      type="checkbox"
+                      id={`view-responded-${viewLead.id}`}
+                      checked={viewLead.responded || false}
+                      onChange={async (e) => {
+                        const val = e.target.checked
+                        await updateLead(viewLead.id, { responded: val })
+                        setViewLead({ ...viewLead, responded: val })
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-[#227b50] focus:ring-[#227b50] cursor-pointer"
+                    />
+                    <label
+                      htmlFor={`view-responded-${viewLead.id}`}
+                      className="text-sm text-gray-900 font-medium cursor-pointer select-none"
+                    >
+                      {viewLead.responded ? 'Sim' : 'Não'}
+                    </label>
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Objetivos
+                  </span>
+                  <p className="whitespace-pre-wrap text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    {viewLead.objectives || 'Nenhum objetivo registrado.'}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <span className="font-semibold text-gray-500 block mb-1">
+                    Notas Adicionais
+                  </span>
+                  <p className="whitespace-pre-wrap text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    {viewLead.notes || 'Nenhuma nota registrada.'}
+                  </p>
+                </div>
+              </div>
+
+              {viewLead.meetings && viewLead.meetings.length > 0 && (
+                <div className="border-t border-gray-100 pt-6">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-gray-500" /> Histórico
+                    de Reuniões
+                  </h4>
+                  <div className="space-y-3">
+                    {viewLead.meetings.map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="p-3 bg-white border border-gray-200 rounded-lg text-sm shadow-sm"
+                      >
+                        <div className="font-semibold text-gray-900 text-xs mb-1.5 flex items-center gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                          {format(new Date(m.date), 'dd/MM/yyyy HH:mm')}
+                        </div>
+                        <div className="text-gray-600 pl-5">
+                          {m.notes || 'Sem anotações.'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!editOpp}

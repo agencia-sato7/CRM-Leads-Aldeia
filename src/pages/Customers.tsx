@@ -192,7 +192,7 @@ export default function Customers() {
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
-            placeholder="Buscar por nome, e-mail ou CNPJ..."
+            placeholder="Buscar por nome ou e-mail..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 bg-gray-50/50 border-gray-200"
@@ -228,7 +228,6 @@ export default function Customers() {
                   <th className="pb-3 px-4">Nome / Contato</th>
                   <th className="pb-3 px-4">E-mail</th>
                   <th className="pb-3 px-4">Telefone</th>
-                  <th className="pb-3 px-4">CNPJ</th>
                   <th className="pb-3 px-4 text-right">Ações</th>
                 </tr>
               </thead>
@@ -253,9 +252,6 @@ export default function Customers() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700">
                       {customer.phone || '-'}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700">
-                      {customer.cnpj || '-'}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <Popover>

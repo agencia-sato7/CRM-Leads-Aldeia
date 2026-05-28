@@ -82,7 +82,7 @@ export default function Opportunities() {
   const [searchLead, setSearchLead] = useState('')
   const [debouncedSearchLead, setDebouncedSearchLead] = useState(searchLead)
 
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(0)
   const pageSize = 10
 
   const [viewLead, setViewLead] = useState<any | null>(null)
@@ -96,7 +96,7 @@ export default function Opportunities() {
   }, [searchLead])
 
   useEffect(() => {
-    setPage(1)
+    setPage(0)
   }, [
     startDateParam,
     endDateParam,
@@ -142,8 +142,8 @@ export default function Opportunities() {
         )
       }
 
-      const from = (page - 1) * pageSize
-      const to = from + pageSize - 1
+      const from = page * 10
+      const to = page * 10 + 9
 
       const { data, count, error } = await query
         .range(from, to)
@@ -304,32 +304,6 @@ export default function Opportunities() {
 
   const filteredOpps = localOpps
   const totalPages = Math.max(1, Math.ceil(localTotal / pageSize))
-
-  const getPageNumbers = () => {
-    const pages = []
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i)
-    } else {
-      if (page <= 4) {
-        for (let i = 1; i <= 5; i++) pages.push(i)
-        pages.push('...')
-        pages.push(totalPages)
-      } else if (page >= totalPages - 3) {
-        pages.push(1)
-        pages.push('...')
-        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
-      } else {
-        pages.push(1)
-        pages.push('...')
-        pages.push(page - 1)
-        pages.push(page)
-        pages.push(page + 1)
-        pages.push('...')
-        pages.push(totalPages)
-      }
-    }
-    return pages
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1008,91 +982,35 @@ export default function Opportunities() {
               </TableBody>
             </Table>
 
-            <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-4 mt-4">
-              <div className="flex flex-1 justify-between sm:hidden">
-                <Button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Anterior
-                </Button>
-                <Button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages || totalPages === 0}
-                  variant="outline"
-                  size="sm"
-                >
-                  Próxima
-                </Button>
+            <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-4 mt-4 px-2">
+              <div className="flex-1 text-sm text-gray-500">
+                Mostrando {localTotal === 0 ? 0 : page * 10 + 1} a{' '}
+                {Math.min((page + 1) * 10, localTotal)} de {localTotal}{' '}
+                registros
               </div>
-              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Mostrando{' '}
-                    <span className="font-medium">
-                      {localTotal === 0 ? 0 : (page - 1) * pageSize + 1}
-                    </span>{' '}
-                    a{' '}
-                    <span className="font-medium">
-                      {Math.min(page * pageSize, localTotal)}
-                    </span>{' '}
-                    de <span className="font-medium">{localTotal}</span>{' '}
-                    resultados
-                  </p>
-                </div>
-                <div>
-                  <nav
-                    className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-                    aria-label="Pagination"
-                  >
-                    <Button
-                      variant="outline"
-                      className="rounded-l-md rounded-r-none px-2 py-2 h-9"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                    >
-                      <span className="sr-only">Anterior</span>
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    {getPageNumbers().map((pageNum, idx) =>
-                      pageNum === '...' ? (
-                        <span
-                          key={`ellipsis-${idx}`}
-                          className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 bg-gray-50 focus:outline-offset-0 h-9"
-                        >
-                          ...
-                        </span>
-                      ) : (
-                        <Button
-                          key={`page-${pageNum}`}
-                          variant={page === pageNum ? 'default' : 'outline'}
-                          className={cn(
-                            'rounded-none px-4 py-2 text-sm font-semibold h-9',
-                            page === pageNum
-                              ? 'bg-[#227b50] text-white hover:bg-[#1a5c3c] z-10'
-                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0',
-                          )}
-                          onClick={() => setPage(pageNum as number)}
-                        >
-                          {pageNum}
-                        </Button>
-                      ),
-                    )}
-                    <Button
-                      variant="outline"
-                      className="rounded-l-none rounded-r-md px-2 py-2 h-9"
-                      onClick={() =>
-                        setPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={page === totalPages || totalPages === 0}
-                    >
-                      <span className="sr-only">Próxima</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </nav>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="h-8 px-3 lg:px-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1 md:mr-2" />
+                  <span className="hidden md:inline">Anterior</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  disabled={page >= totalPages - 1 || totalPages === 0}
+                  className="h-8 px-3 lg:px-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <span className="hidden md:inline">Próxima</span>
+                  <ChevronRight className="w-4 h-4 ml-1 md:ml-2" />
+                </Button>
               </div>
             </div>
           </div>

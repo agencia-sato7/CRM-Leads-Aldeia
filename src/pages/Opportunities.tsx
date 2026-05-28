@@ -701,7 +701,6 @@ export default function Opportunities() {
             <TableHeader className="bg-gray-50">
               <TableRow>
                 <TableHead>Lead</TableHead>
-                <TableHead className="w-16 text-center">Qtd</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead className="text-center">Fechamento</TableHead>
@@ -756,9 +755,6 @@ export default function Opportunities() {
                       >
                         {lead.company} {lead.contact ? `/ ${lead.contact}` : ''}
                       </button>
-                    </TableCell>
-                    <TableCell className="text-center font-semibold text-gray-600">
-                      {opp.quantity || 1}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {users.find((u) => u.id === opp.userId)?.name || '-'}

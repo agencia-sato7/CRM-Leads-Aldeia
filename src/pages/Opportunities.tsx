@@ -76,35 +76,59 @@ export default function Opportunities() {
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const [filterUserId, setFilterUserId] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('active')
-  const [filterProduct, setFilterProduct] = useState<string>('all')
-  const [searchLead, setSearchLead] = useState('')
-  const [debouncedSearchLead, setDebouncedSearchLead] = useState(searchLead)
+  const filterUserId = searchParams.get('user') || 'all'
+  const filterStatus = searchParams.get('status') || 'active'
+  const filterProduct = searchParams.get('product') || 'all'
 
-  const [page, setPage] = useState(0)
+  const [searchLead, setSearchLead] = useState(searchParams.get('search') || '')
+  const [debouncedSearchLead, setDebouncedSearchLead] = useState(
+    searchParams.get('search') || '',
+  )
+
+  const currentPage = parseInt(searchParams.get('page') || '1', 10)
   const pageSize = 10
+
+  const setPage = (val: number | ((p: number) => number)) => {
+    const newPage = typeof val === 'function' ? val(currentPage) : val
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('page', newPage.toString())
+      return next
+    })
+  }
 
   const [viewLead, setViewLead] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearchLead(searchLead)
-    }, 300)
+      if (searchLead !== debouncedSearchLead) {
+        setDebouncedSearchLead(searchLead)
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev)
+            if (searchLead) {
+              next.set('search', searchLead)
+            } else {
+              next.delete('search')
+            }
+            next.set('page', '1')
+            return next
+          },
+          { replace: true },
+        )
+      }
+    }, 400)
     return () => clearTimeout(handler)
-  }, [searchLead])
+  }, [searchLead, debouncedSearchLead, setSearchParams])
 
   useEffect(() => {
-    setPage(0)
-  }, [
-    startDateParam,
-    endDateParam,
-    filterStatus,
-    filterUserId,
-    filterProduct,
-    debouncedSearchLead,
-  ])
+    const searchFromUrl = searchParams.get('search') || ''
+    if (searchFromUrl !== debouncedSearchLead) {
+      setSearchLead(searchFromUrl)
+      setDebouncedSearchLead(searchFromUrl)
+    }
+  }, [searchParams, debouncedSearchLead])
 
   const [localOpps, setLocalOpps] = useState<any[]>([])
   const [localTotal, setLocalTotal] = useState(0)
@@ -142,8 +166,8 @@ export default function Opportunities() {
         )
       }
 
-      const from = page * 10
-      const to = page * 10 + 9
+      const from = (currentPage - 1) * pageSize
+      const to = from + pageSize - 1
 
       const { data, count, error } = await query
         .range(from, to)
@@ -181,7 +205,7 @@ export default function Opportunities() {
     filterUserId,
     filterProduct,
     debouncedSearchLead,
-    page,
+    currentPage,
     pageSize,
   ])
 
@@ -191,17 +215,26 @@ export default function Opportunities() {
     }
   }, [fetchLocalOpportunities, currentUser])
 
-  const handleDateChange = (type: 'start' | 'end', value: string) => {
-    const newParams = new URLSearchParams(searchParams)
-    if (value) {
-      if (type === 'start') newParams.set('startDate', value)
-      if (type === 'end') newParams.set('endDate', value)
-    } else {
-      if (type === 'start') newParams.delete('startDate')
-      if (type === 'end') newParams.delete('endDate')
-    }
-    setSearchParams(newParams)
+  const updateFilter = (key: string, value: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (value && value !== 'all') {
+        next.set(key, value)
+      } else {
+        next.delete(key)
+      }
+      next.set('page', '1')
+      return next
+    })
   }
+
+  const handleDateChange = (type: 'start' | 'end', value: string) => {
+    updateFilter(type === 'start' ? 'startDate' : 'endDate', value)
+  }
+
+  const handleStatusChange = (val: string) => updateFilter('status', val)
+  const handleUserChange = (val: string) => updateFilter('user', val)
+  const handleProductChange = (val: string) => updateFilter('product', val)
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -295,15 +328,22 @@ export default function Opportunities() {
     endDateParam !== ''
 
   const clearFilters = () => {
-    setFilterUserId('all')
-    setFilterStatus('active')
-    setFilterProduct('all')
     setSearchLead('')
-    setSearchParams(new URLSearchParams())
+    setDebouncedSearchLead('')
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('user')
+      next.delete('status')
+      next.delete('product')
+      next.delete('search')
+      next.delete('startDate')
+      next.delete('endDate')
+      next.set('page', '1')
+      return next
+    })
   }
 
   const filteredOpps = localOpps
-  const totalPages = Math.max(1, Math.ceil(localTotal / pageSize))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -704,7 +744,7 @@ export default function Opportunities() {
               onChange={(e) => setSearchLead(e.target.value)}
             />
           </div>
-          <Select value={filterUserId} onValueChange={setFilterUserId}>
+          <Select value={filterUserId} onValueChange={handleUserChange}>
             <SelectTrigger className="w-[180px]">
               <Filter className="w-3.5 h-3.5 mr-2" />
               <SelectValue placeholder="Responsável" />
@@ -720,7 +760,7 @@ export default function Opportunities() {
                 ))}
             </SelectContent>
           </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-[180px]">
               <Filter className="w-3.5 h-3.5 mr-2" />
               <SelectValue placeholder="Status" />
@@ -734,7 +774,7 @@ export default function Opportunities() {
               <SelectItem value="Perdida">Perdida</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterProduct} onValueChange={setFilterProduct}>
+          <Select value={filterProduct} onValueChange={handleProductChange}>
             <SelectTrigger className="w-[180px] h-10">
               <Filter className="w-3.5 h-3.5 mr-2" />
               <SelectValue placeholder="Produto/Serviço" />
@@ -790,7 +830,7 @@ export default function Opportunities() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="rounded-xl border border-gray-200 overflow-hidden">
             <Table>
               <TableHeader className="bg-gray-50">
                 <TableRow>
@@ -982,34 +1022,48 @@ export default function Opportunities() {
               </TableBody>
             </Table>
 
-            <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-4 mt-4 px-2">
-              <div className="flex-1 text-sm text-gray-500">
-                Mostrando {localTotal === 0 ? 0 : page * 10 + 1} a{' '}
-                {Math.min((page + 1) * 10, localTotal)} de {localTotal}{' '}
-                registros
+            <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-white">
+              <div className="text-sm text-gray-500">
+                Mostrando{' '}
+                <span className="font-medium">
+                  {localTotal === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+                </span>{' '}
+                a{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * pageSize, localTotal)}
+                </span>{' '}
+                de <span className="font-medium">{localTotal}</span>{' '}
+                oportunidades
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="h-8 px-3 lg:px-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || loading}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1 md:mr-2" />
-                  <span className="hidden md:inline">Anterior</span>
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Anterior
                 </Button>
+                <div className="text-sm font-medium text-gray-700 px-2">
+                  Página {currentPage} de{' '}
+                  {Math.max(1, Math.ceil(localTotal / pageSize))}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                    setPage((p) =>
+                      Math.min(Math.ceil(localTotal / pageSize), p + 1),
+                    )
                   }
-                  disabled={page >= totalPages - 1 || totalPages === 0}
-                  className="h-8 px-3 lg:px-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                  disabled={
+                    currentPage ===
+                      Math.max(1, Math.ceil(localTotal / pageSize)) || loading
+                  }
                 >
-                  <span className="hidden md:inline">Próxima</span>
-                  <ChevronRight className="w-4 h-4 ml-1 md:ml-2" />
+                  Próximo
+                  <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
             </div>

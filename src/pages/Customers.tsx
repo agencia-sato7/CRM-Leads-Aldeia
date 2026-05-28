@@ -192,7 +192,7 @@ export default function Customers() {
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
-            placeholder="Buscar por empresa, nome, e-mail ou CNPJ..."
+            placeholder="Buscar por nome, e-mail ou CNPJ..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 bg-gray-50/50 border-gray-200"
@@ -226,7 +226,6 @@ export default function Customers() {
               <thead>
                 <tr className="border-b border-gray-100 text-left text-sm font-medium text-gray-500">
                   <th className="pb-3 px-4">Nome / Contato</th>
-                  <th className="pb-3 px-4">Empresa</th>
                   <th className="pb-3 px-4">E-mail</th>
                   <th className="pb-3 px-4">Telefone</th>
                   <th className="pb-3 px-4">CNPJ</th>
@@ -248,9 +247,6 @@ export default function Customers() {
                           {customer.name}
                         </div>
                       </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700">
-                      {customer.company}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700">
                       {customer.email || '-'}
@@ -303,13 +299,13 @@ export default function Customers() {
             </table>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 mt-4">
+              <div className="flex items-center justify-between border-t border-gray-100 px-4 py-4 mt-4">
                 <div className="text-sm text-gray-500">
                   Mostrando{' '}
                   <span className="font-medium">
                     {(currentPage - 1) * itemsPerPage + 1}
                   </span>{' '}
-                  a{' '}
+                  até{' '}
                   <span className="font-medium">
                     {Math.min(
                       currentPage * itemsPerPage,
@@ -320,16 +316,18 @@ export default function Customers() {
                   <span className="font-medium">
                     {filteredCustomers.length}
                   </span>{' '}
-                  clientes
+                  resultados
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
+                    className="h-8"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Anterior
                   </Button>
                   <Button
                     variant="outline"
@@ -338,8 +336,10 @@ export default function Customers() {
                       setCurrentPage((p) => Math.min(totalPages, p + 1))
                     }
                     disabled={currentPage === totalPages}
+                    className="h-8"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    Próximo
+                    <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>

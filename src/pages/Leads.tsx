@@ -961,7 +961,6 @@ export default function Leads() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Origem</TableHead>
-                  <TableHead>Objetivo Principal / Interesse</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1.5">
                       Status
@@ -1032,38 +1031,6 @@ export default function Leads() {
                       >
                         {lead.origin}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-[150px] text-sm text-gray-600">
-                      <div className="flex flex-col gap-1 items-start">
-                        {lead.product_id &&
-                          products.find((p) => p.id === lead.product_id) && (
-                            <Badge
-                              variant="outline"
-                              className="bg-gray-50 text-gray-600 font-normal"
-                            >
-                              {(() => {
-                                const prod = products.find(
-                                  (p) => p.id === lead.product_id,
-                                )
-                                const cat = productCategories.find(
-                                  (c) => c.id === prod?.categoryId,
-                                )
-                                return cat
-                                  ? `${prod?.name} / ${cat.name}`
-                                  : prod?.name
-                              })()}
-                            </Badge>
-                          )}
-                        {lead.objectives &&
-                          lead.objectives !== 'Não informado' && (
-                            <span
-                              className="truncate w-full text-xs text-gray-500"
-                              title={lead.objectives}
-                            >
-                              {lead.objectives}
-                            </span>
-                          )}
-                      </div>
                     </TableCell>
                     <TableCell>
                       <div

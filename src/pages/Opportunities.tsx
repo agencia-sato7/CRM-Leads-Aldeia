@@ -711,50 +711,53 @@ export default function Opportunities() {
             <TableBody>
               {filteredOpps.map((opp) => {
                 const lead = leads.find((l) => l.id === opp.leadId)
-                if (!lead) return null
                 return (
                   <TableRow key={opp.id} className="hover:bg-gray-50/50">
                     <TableCell className="font-medium text-gray-900">
-                      <button
-                        onClick={async () => {
-                          setViewLead(lead)
-                          const { data } = await supabase
-                            .from('leads')
-                            .select('*, meetings(*), lead_products(*)')
-                            .eq('id', lead.id)
-                            .single()
-                          if (data) {
-                            setViewLead((prev: any) => {
-                              if (!prev || prev.id !== data.id) return prev
-                              return {
-                                ...prev,
-                                leadProducts: (data.lead_products || []).map(
-                                  (lp: any) => ({
-                                    id: lp.id,
-                                    leadId: lp.lead_id,
-                                    productId: lp.product_id,
-                                  }),
-                                ),
-                                meetings: (data.meetings || [])
-                                  .map((m: any) => ({
-                                    id: m.id,
-                                    date: m.date,
-                                    notes: m.notes || '',
-                                  }))
-                                  .sort(
-                                    (a: any, b: any) =>
-                                      new Date(b.date).getTime() -
-                                      new Date(a.date).getTime(),
+                      {lead ? (
+                        <button
+                          onClick={async () => {
+                            setViewLead(lead)
+                            const { data } = await supabase
+                              .from('leads')
+                              .select('*, meetings(*), lead_products(*)')
+                              .eq('id', lead.id)
+                              .single()
+                            if (data) {
+                              setViewLead((prev: any) => {
+                                if (!prev || prev.id !== data.id) return prev
+                                return {
+                                  ...prev,
+                                  leadProducts: (data.lead_products || []).map(
+                                    (lp: any) => ({
+                                      id: lp.id,
+                                      leadId: lp.lead_id,
+                                      productId: lp.product_id,
+                                    }),
                                   ),
-                              }
-                            })
-                          }
-                        }}
-                        className="text-left hover:text-[#227b50] hover:underline focus:outline-none"
-                        title="Ver detalhes do lead"
-                      >
-                        {lead.company} {lead.contact ? `/ ${lead.contact}` : ''}
-                      </button>
+                                  meetings: (data.meetings || [])
+                                    .map((m: any) => ({
+                                      id: m.id,
+                                      date: m.date,
+                                      notes: m.notes || '',
+                                    }))
+                                    .sort(
+                                      (a: any, b: any) =>
+                                        new Date(b.date).getTime() -
+                                        new Date(a.date).getTime(),
+                                    ),
+                                }
+                              })
+                            }
+                          }}
+                          className="text-left hover:text-[#227b50] hover:underline focus:outline-none"
+                          title="Ver detalhes do lead"
+                        >
+                          {lead.contact || ''}
+                        </button>
+                      ) : (
+                        <span></span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {users.find((u) => u.id === opp.userId)?.name || '-'}

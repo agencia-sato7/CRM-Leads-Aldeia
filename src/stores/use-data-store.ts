@@ -192,12 +192,18 @@ interface DataStore {
   products: Product[]
   interestMappings: InterestMapping[]
 
+  totalOpportunities: number
   fetchInitialData: () => Promise<void>
-  fetchOpportunities: (
-    startDate?: string,
-    endDate?: string,
-    statusFilter?: string,
-  ) => Promise<void>
+  fetchOpportunities: (options: {
+    startDate?: string
+    endDate?: string
+    statusFilter?: string
+    userId?: string
+    productFilter?: string
+    searchLead?: string
+    page?: number
+    pageSize?: number
+  }) => Promise<void>
   updateUser: (id: string, data: Partial<User>) => Promise<void>
   addLead: (
     lead: Omit<Lead, 'id' | 'createdAt' | 'meetings'>,
@@ -255,16 +261,25 @@ export const useDataStore = create<DataStore>((set, get) => ({
   productCategories: [],
   products: [],
   interestMappings: [],
+  totalOpportunities: 0,
 
-  fetchOpportunities: async (
-    startDate?: string,
-    endDate?: string,
-    statusFilter?: string,
-  ) => {
+  fetchOpportunities: async (options) => {
+    const {
+      startDate,
+      endDate,
+      statusFilter,
+      userId,
+      productFilter,
+      searchLead,
+      page = 1,
+      pageSize = 10,
+    } = options
+
     let query = supabase
       .from('opportunities')
-      .select('*')
+      .select('*, leads!inner(company, contact)', { count: 'exact' })
       .order('created_at', { ascending: false })
+
     if (startDate) query = query.gte('created_at', `${startDate}T00:00:00.000Z`)
     if (endDate) query = query.lte('created_at', `${endDate}T23:59:59.999Z`)
 
@@ -274,7 +289,32 @@ export const useDataStore = create<DataStore>((set, get) => ({
       query = query.eq('status', statusFilter)
     }
 
-    const { data: oppsData } = await query
+    if (userId && userId !== 'all') {
+      query = query.eq('user_id', userId)
+    }
+
+    if (productFilter && productFilter !== 'all') {
+      query = query.ilike('service', `%${productFilter}%`)
+    }
+
+    if (searchLead) {
+      query = query.or(
+        `company.ilike.%${searchLead}%,contact.ilike.%${searchLead}%`,
+        { referencedTable: 'leads' },
+      )
+    }
+
+    const currentUser = get().currentUser
+    if (currentUser && currentUser.role !== 'ADMIN') {
+      query = query.or(`user_id.eq.${currentUser.id},user_id.is.null`)
+    }
+
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    query = query.range(from, to)
+
+    const { data: oppsData, count } = await query
+
     if (oppsData) {
       const mappedOpps: Opportunity[] = oppsData.map((opp) => ({
         id: opp.id,
@@ -290,7 +330,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         closedDate: (opp as any).closed_date || undefined,
         amountPaid: Number((opp as any).amount_paid) || 0,
       }))
-      set({ opportunities: mappedOpps })
+      set({ opportunities: mappedOpps, totalOpportunities: count || 0 })
     }
   },
 
@@ -822,6 +862,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         updatedAt: data.updated_at,
       }
       set((state) => ({
+        totalOpportunities: state.totalOpportunities + 1,
         opportunities: [newOpp, ...state.opportunities],
         leads: state.leads.map((l) =>
           l.id === opp.leadId

@@ -10,6 +10,9 @@ import {
   XCircle,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { supabase } from '@/lib/supabase/client'
@@ -53,6 +56,7 @@ import { cn } from '@/lib/utils'
 export default function Opportunities() {
   const {
     opportunities,
+    totalOpportunities,
     leads,
     products,
     productCategories,
@@ -78,16 +82,52 @@ export default function Opportunities() {
   const [filterStatus, setFilterStatus] = useState<string>('active')
   const [filterProduct, setFilterProduct] = useState<string>('all')
   const [searchLead, setSearchLead] = useState('')
+  const [debouncedSearchLead, setDebouncedSearchLead] = useState(searchLead)
+
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const [viewLead, setViewLead] = useState<any | null>(null)
 
   useEffect(() => {
-    fetchOpportunities(
-      startDateParam || undefined,
-      endDateParam || undefined,
-      filterStatus,
-    )
-  }, [startDateParam, endDateParam, filterStatus, fetchOpportunities])
+    const handler = setTimeout(() => {
+      setDebouncedSearchLead(searchLead)
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [searchLead])
+
+  useEffect(() => {
+    setPage(1)
+  }, [
+    startDateParam,
+    endDateParam,
+    filterStatus,
+    filterUserId,
+    filterProduct,
+    debouncedSearchLead,
+  ])
+
+  useEffect(() => {
+    fetchOpportunities({
+      startDate: startDateParam || undefined,
+      endDate: endDateParam || undefined,
+      statusFilter: filterStatus,
+      userId: filterUserId,
+      productFilter: filterProduct,
+      searchLead: debouncedSearchLead,
+      page,
+      pageSize,
+    })
+  }, [
+    startDateParam,
+    endDateParam,
+    filterStatus,
+    filterUserId,
+    filterProduct,
+    debouncedSearchLead,
+    page,
+    fetchOpportunities,
+  ])
 
   const handleDateChange = (type: 'start' | 'end', value: string) => {
     const newParams = new URLSearchParams(searchParams)
@@ -173,15 +213,14 @@ export default function Opportunities() {
       currentUser.role === 'ADMIN' || l.userId === currentUser.id || !l.userId,
   )
   const qualifiedLeads = userLeads.filter((l) => l.status === 'Qualificado')
-  const visibleOpps = opportunities.filter(
-    (opp) =>
-      currentUser.role === 'ADMIN' ||
-      opp.userId === currentUser.id ||
-      !opp.userId,
-  )
 
   const uniqueServices = Array.from(
-    new Set(opportunities.map((o) => o.service).filter(Boolean)),
+    new Set(
+      [
+        ...products.map((p) => p.name),
+        ...opportunities.map((o) => o.service),
+      ].filter(Boolean),
+    ),
   ).sort()
 
   const hasActiveFilters =
@@ -200,37 +239,34 @@ export default function Opportunities() {
     setSearchParams(new URLSearchParams())
   }
 
-  const filteredOpps = visibleOpps.filter((opp) => {
-    const lead = leads.find((l) => l.id === opp.leadId)
-    const matchUser = filterUserId === 'all' || opp.userId === filterUserId
-    const matchStatus =
-      filterStatus === 'all'
-        ? true
-        : filterStatus === 'active'
-          ? ['Aguardando', 'Aberta'].includes(opp.status)
-          : opp.status === filterStatus
-    const matchProduct =
-      filterProduct === 'all' ||
-      opp.service.toLowerCase().includes(filterProduct.toLowerCase())
-    const matchLead =
-      searchLead === '' ||
-      (lead &&
-        (lead.company.toLowerCase().includes(searchLead.toLowerCase()) ||
-          lead.contact.toLowerCase().includes(searchLead.toLowerCase())))
+  const filteredOpps = opportunities
+  const totalPages = Math.max(1, Math.ceil(totalOpportunities / pageSize))
 
-    const oppDate = opp.createdAt ? opp.createdAt.substring(0, 10) : ''
-    const matchStartDate = !startDateParam || oppDate >= startDateParam
-    const matchEndDate = !endDateParam || oppDate <= endDateParam
-
-    return (
-      matchUser &&
-      matchStatus &&
-      matchProduct &&
-      matchLead &&
-      matchStartDate &&
-      matchEndDate
-    )
-  })
+  const getPageNumbers = () => {
+    const pages = []
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      if (page <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i)
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (page >= totalPages - 3) {
+        pages.push(1)
+        pages.push('...')
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
+      } else {
+        pages.push(1)
+        pages.push('...')
+        pages.push(page - 1)
+        pages.push(page)
+        pages.push(page + 1)
+        pages.push('...')
+        pages.push(totalPages)
+      }
+    }
+    return pages
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

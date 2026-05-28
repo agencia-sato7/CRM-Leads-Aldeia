@@ -193,7 +193,11 @@ interface DataStore {
   interestMappings: InterestMapping[]
 
   fetchInitialData: () => Promise<void>
-  fetchOpportunities: (startDate?: string, endDate?: string) => Promise<void>
+  fetchOpportunities: (
+    startDate?: string,
+    endDate?: string,
+    statusFilter?: string,
+  ) => Promise<void>
   updateUser: (id: string, data: Partial<User>) => Promise<void>
   addLead: (
     lead: Omit<Lead, 'id' | 'createdAt' | 'meetings'>,
@@ -252,13 +256,23 @@ export const useDataStore = create<DataStore>((set, get) => ({
   products: [],
   interestMappings: [],
 
-  fetchOpportunities: async (startDate?: string, endDate?: string) => {
+  fetchOpportunities: async (
+    startDate?: string,
+    endDate?: string,
+    statusFilter?: string,
+  ) => {
     let query = supabase
       .from('opportunities')
       .select('*')
       .order('created_at', { ascending: false })
     if (startDate) query = query.gte('created_at', `${startDate}T00:00:00.000Z`)
     if (endDate) query = query.lte('created_at', `${endDate}T23:59:59.999Z`)
+
+    if (statusFilter === 'active' || !statusFilter) {
+      query = query.in('status', ['Aguardando', 'Aberta'])
+    } else if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter)
+    }
 
     const { data: oppsData } = await query
     if (oppsData) {

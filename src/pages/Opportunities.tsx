@@ -72,8 +72,12 @@ export default function Opportunities() {
   const endDateParam = searchParams.get('endDate') || ''
 
   useEffect(() => {
-    fetchOpportunities(startDateParam || undefined, endDateParam || undefined)
-  }, [startDateParam, endDateParam, fetchOpportunities])
+    fetchOpportunities(
+      startDateParam || undefined,
+      endDateParam || undefined,
+      filterStatus,
+    )
+  }, [startDateParam, endDateParam, filterStatus, fetchOpportunities])
 
   const handleDateChange = (type: 'start' | 'end', value: string) => {
     const newParams = new URLSearchParams(searchParams)
@@ -90,7 +94,7 @@ export default function Opportunities() {
   const [searchTerm, setSearchTerm] = useState('')
 
   const [filterUserId, setFilterUserId] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('active')
   const [filterProduct, setFilterProduct] = useState<string>('all')
   const [searchLead, setSearchLead] = useState('')
 
@@ -181,7 +185,7 @@ export default function Opportunities() {
 
   const hasActiveFilters =
     filterUserId !== 'all' ||
-    filterStatus !== 'all' ||
+    filterStatus !== 'active' ||
     filterProduct !== 'all' ||
     searchLead !== '' ||
     startDateParam !== '' ||
@@ -189,7 +193,7 @@ export default function Opportunities() {
 
   const clearFilters = () => {
     setFilterUserId('all')
-    setFilterStatus('all')
+    setFilterStatus('active')
     setFilterProduct('all')
     setSearchLead('')
     setSearchParams(new URLSearchParams())
@@ -198,7 +202,12 @@ export default function Opportunities() {
   const filteredOpps = visibleOpps.filter((opp) => {
     const lead = leads.find((l) => l.id === opp.leadId)
     const matchUser = filterUserId === 'all' || opp.userId === filterUserId
-    const matchStatus = filterStatus === 'all' || opp.status === filterStatus
+    const matchStatus =
+      filterStatus === 'all'
+        ? true
+        : filterStatus === 'active'
+          ? ['Aguardando', 'Aberta'].includes(opp.status)
+          : opp.status === filterStatus
     const matchProduct =
       filterProduct === 'all' ||
       opp.service.toLowerCase().includes(filterProduct.toLowerCase())
@@ -642,6 +651,7 @@ export default function Opportunities() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="active">Ativas (Aberta/Aguardando)</SelectItem>
               <SelectItem value="all">Todos os Status</SelectItem>
               <SelectItem value="Aguardando">Aguardando</SelectItem>
               <SelectItem value="Aberta">Aberta</SelectItem>
@@ -681,11 +691,14 @@ export default function Opportunities() {
               <Inbox className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">
-              Nenhuma oportunidade encontrada
+              {filterStatus === 'active'
+                ? 'Nenhuma oportunidade ativa encontrada'
+                : 'Nenhuma oportunidade encontrada'}
             </h3>
             <p className="text-gray-500 max-w-sm mb-6">
-              Nenhuma oportunidade corresponde aos critérios de busca ou sua
-              base está vazia. Adicione uma nova oportunidade.
+              {filterStatus === 'active'
+                ? 'Você não possui oportunidades em andamento no momento. Adicione uma nova oportunidade para começar.'
+                : 'Nenhuma oportunidade corresponde aos critérios de busca ou sua base está vazia. Adicione uma nova oportunidade.'}
             </p>
             <Button
               onClick={() => setIsOpen(true)}

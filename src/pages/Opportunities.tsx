@@ -71,6 +71,16 @@ export default function Opportunities() {
   const startDateParam = searchParams.get('startDate') || ''
   const endDateParam = searchParams.get('endDate') || ''
 
+  const [comboboxOpen, setComboboxOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const [filterUserId, setFilterUserId] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('active')
+  const [filterProduct, setFilterProduct] = useState<string>('all')
+  const [searchLead, setSearchLead] = useState('')
+
+  const [viewLead, setViewLead] = useState<any | null>(null)
+
   useEffect(() => {
     fetchOpportunities(
       startDateParam || undefined,
@@ -90,15 +100,6 @@ export default function Opportunities() {
     }
     setSearchParams(newParams)
   }
-  const [comboboxOpen, setComboboxOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-
-  const [filterUserId, setFilterUserId] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('active')
-  const [filterProduct, setFilterProduct] = useState<string>('all')
-  const [searchLead, setSearchLead] = useState('')
-
-  const [viewLead, setViewLead] = useState<any | null>(null)
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {

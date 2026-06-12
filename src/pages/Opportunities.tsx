@@ -503,7 +503,7 @@ export default function Opportunities() {
                                 unitPrice: baseVal,
                                 quantity: lQtd,
                                 value: value,
-                                leadNeeds: l.notes || prev.leadNeeds,
+                                leadNeeds: l.objectives || prev.leadNeeds,
                                 userId: l.userId || prev.userId,
                               }))
                               setComboboxOpen(false)
@@ -1137,15 +1137,6 @@ export default function Opportunities() {
                 </div>
                 <div>
                   <span className="font-semibold text-gray-500 block mb-1">
-                    Interesse
-                  </span>
-                  <span className="text-gray-900">
-                    {products?.find((p) => p.id === viewLead.product_id)
-                      ?.name || '-'}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-500 block mb-1">
                     Produtos Relacionados
                   </span>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -1184,8 +1175,9 @@ export default function Opportunities() {
                           .forEach((p) => recommended.add(p.id))
                       }
 
-                      const textToSearch =
-                        `${viewLead.notes || ''} ${viewLead.objectives || ''}`.toLowerCase()
+                      const textToSearch = (
+                        viewLead.objectives || ''
+                      ).toLowerCase()
                       const matches = (interestMappings || [])
                         .filter((im: any) => {
                           if (!im.termPattern) return false
@@ -1208,6 +1200,26 @@ export default function Opportunities() {
                             .forEach((p) => recommended.add(p.id))
                         }
                       })
+
+                      if (recommended.size === 0 && textToSearch) {
+                        products?.forEach((p) => {
+                          if (
+                            p.searchTerms &&
+                            p.searchTerms
+                              .toLowerCase()
+                              .split(',')
+                              .some((term) =>
+                                textToSearch.includes(term.trim()),
+                              )
+                          ) {
+                            recommended.add(p.id)
+                          } else if (
+                            textToSearch.includes(p.name.toLowerCase())
+                          ) {
+                            recommended.add(p.id)
+                          }
+                        })
+                      }
 
                       if (viewLead.product_id)
                         recommended.delete(viewLead.product_id)
@@ -1287,10 +1299,10 @@ export default function Opportunities() {
                 </div>
                 <div className="col-span-2">
                   <span className="font-semibold text-gray-500 block mb-1">
-                    Objetivos
+                    Interesse
                   </span>
                   <p className="whitespace-pre-wrap text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                    {viewLead.objectives || 'Nenhum objetivo registrado.'}
+                    {viewLead.objectives || 'Nenhum interesse registrado.'}
                   </p>
                 </div>
                 <div className="col-span-2">

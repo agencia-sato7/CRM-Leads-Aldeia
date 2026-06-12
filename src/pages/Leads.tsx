@@ -505,7 +505,6 @@ export default function Leads() {
 
     const updatePayload: Partial<Lead> = {
       scheduledMeetingDate: scheduleFormData.date,
-      notes: scheduleFormData.notes,
     }
 
     if (
@@ -657,7 +656,7 @@ export default function Leads() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Interesse</label>
+                  <label className="text-sm font-medium">Produto/Serviço</label>
                   <Select
                     value={formData.product_id || undefined}
                     onValueChange={(v) => {
@@ -757,6 +756,32 @@ export default function Leads() {
                     }}
                     placeholder="R$ 0,00"
                     disabled={!formData.product_id}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium">Interesse</label>
+                  <textarea
+                    rows={2}
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+                    value={formData.objectives}
+                    onChange={(e) =>
+                      setFormData({ ...formData, objectives: e.target.value })
+                    }
+                    placeholder="Quais os interesses do lead?"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium">
+                    Notas Adicionais
+                  </label>
+                  <textarea
+                    rows={2}
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                    placeholder="Observações administrativas..."
                   />
                 </div>
                 <div className="col-span-2 flex items-center gap-2 mt-2">
@@ -1283,7 +1308,7 @@ export default function Leads() {
                                 setScheduleLead(lead)
                                 setScheduleFormData({
                                   date: '',
-                                  notes: lead.notes || '',
+                                  notes: '',
                                 })
                               }}
                             >
@@ -1336,7 +1361,7 @@ export default function Leads() {
                                         0,
                                         16,
                                       ) || '',
-                                    notes: lead.notes || '',
+                                    notes: '',
                                   })
                                 }}
                               >
@@ -1489,21 +1514,6 @@ export default function Leads() {
                 }
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">Notas (opcional)</label>
-              <textarea
-                rows={3}
-                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
-                value={scheduleFormData.notes}
-                onChange={(e) =>
-                  setScheduleFormData({
-                    ...scheduleFormData,
-                    notes: e.target.value,
-                  })
-                }
-                placeholder="Observações iniciais para a reunião..."
-              />
-            </div>
           </div>
           <DialogFooter className="mt-4">
             <Button variant="ghost" onClick={() => setScheduleLead(null)}>
@@ -1625,46 +1635,11 @@ export default function Leads() {
                     {viewLead.status}
                   </span>
                 </div>
-                <div>
-                  <span className="font-semibold text-gray-500 block mb-1">
-                    Interesse
-                  </span>
-                  <span className="text-gray-900">
-                    {products.find((p) => p.id === viewLead.product_id)?.name ||
-                      '-'}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-500 block mb-1">
-                    Produtos Relacionados
-                  </span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {viewLead.leadProducts &&
-                    viewLead.leadProducts.length > 0 ? (
-                      viewLead.leadProducts.map((lp) => {
-                        const p = products.find(
-                          (prod) => prod.id === lp.productId,
-                        )
-                        return p ? (
-                          <Badge
-                            key={lp.id}
-                            variant="outline"
-                            className="bg-gray-50 text-gray-700 font-normal"
-                          >
-                            {p.name}
-                          </Badge>
-                        ) : null
-                      })
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
-                  </div>
-                </div>
                 <div className="col-span-2">
-                  <span className="font-semibold text-gray-500 block mb-1">
+                  <span className="font-semibold text-gray-500 block mb-2">
                     Produtos Recomendados
                   </span>
-                  <div className="flex flex-wrap gap-2 mt-1">
+                  <div className="flex flex-col gap-2">
                     {(() => {
                       const recommended = new Set<string>()
 
@@ -1674,8 +1649,9 @@ export default function Leads() {
                           .forEach((p) => recommended.add(p.id))
                       }
 
-                      const textToSearch =
-                        `${viewLead.notes || ''} ${viewLead.objectives || ''}`.toLowerCase()
+                      const textToSearch = (
+                        viewLead.objectives || ''
+                      ).toLowerCase()
                       const matches = interestMappings
                         .filter((im) => {
                           if (!im.termPattern) return false
@@ -1699,6 +1675,26 @@ export default function Leads() {
                         }
                       })
 
+                      if (recommended.size === 0 && textToSearch) {
+                        products.forEach((p) => {
+                          if (
+                            p.searchTerms &&
+                            p.searchTerms
+                              .toLowerCase()
+                              .split(',')
+                              .some((term) =>
+                                textToSearch.includes(term.trim()),
+                              )
+                          ) {
+                            recommended.add(p.id)
+                          } else if (
+                            textToSearch.includes(p.name.toLowerCase())
+                          ) {
+                            recommended.add(p.id)
+                          }
+                        })
+                      }
+
                       if (viewLead.product_id)
                         recommended.delete(viewLead.product_id)
                       if (viewLead.leadProducts) {
@@ -1710,25 +1706,37 @@ export default function Leads() {
                       if (recommended.size === 0) {
                         return (
                           <span className="text-gray-400 text-sm">
-                            Nenhuma recomendação no momento.
+                            Nenhum produto recomendado encontrado.
                           </span>
                         )
                       }
 
-                      return Array.from(recommended)
-                        .slice(0, 5)
-                        .map((id) => {
-                          const p = products.find((prod) => prod.id === id)
-                          return p ? (
-                            <Badge
-                              key={id}
-                              variant="secondary"
-                              className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 shadow-sm cursor-default"
-                            >
-                              ✨ {p.name}
-                            </Badge>
-                          ) : null
-                        })
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {Array.from(recommended)
+                            .slice(0, 6)
+                            .map((id) => {
+                              const p = products.find((prod) => prod.id === id)
+                              if (!p) return null
+                              return (
+                                <div
+                                  key={id}
+                                  className="flex flex-col p-3 border border-gray-100 rounded-lg bg-emerald-50/30"
+                                >
+                                  <span className="font-semibold text-emerald-800 text-sm line-clamp-1">
+                                    ✨ {p.name}
+                                  </span>
+                                  <span className="text-emerald-600 text-xs font-medium mt-1">
+                                    {new Intl.NumberFormat('pt-BR', {
+                                      style: 'currency',
+                                      currency: 'BRL',
+                                    }).format(p.price)}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                        </div>
+                      )
                     })()}
                   </div>
                 </div>
@@ -1778,10 +1786,10 @@ export default function Leads() {
                 </div>
                 <div className="col-span-2">
                   <span className="font-semibold text-gray-500 block mb-1">
-                    Objetivos
+                    Interesse
                   </span>
                   <p className="whitespace-pre-wrap text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                    {viewLead.objectives || 'Nenhum objetivo registrado.'}
+                    {viewLead.objectives || 'Nenhum interesse registrado.'}
                   </p>
                 </div>
                 <div className="col-span-2">
@@ -1872,7 +1880,7 @@ export default function Leads() {
                   />
                 </div>
                 <div className="col-span-1">
-                  <label className="text-sm font-medium">Interesse</label>
+                  <label className="text-sm font-medium">Produto/Serviço</label>
                   <Select
                     value={editLead.product_id || undefined}
                     disabled
@@ -2050,15 +2058,26 @@ export default function Leads() {
                   </label>
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm font-medium">
-                    Objetivos com a agência
-                  </label>
+                  <label className="text-sm font-medium">Interesse</label>
                   <textarea
                     rows={3}
                     className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
                     value={editLead.objectives}
                     onChange={(e) =>
                       setEditLead({ ...editLead, objectives: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium">
+                    Notas Adicionais
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+                    value={editLead.notes}
+                    onChange={(e) =>
+                      setEditLead({ ...editLead, notes: e.target.value })
                     }
                   />
                 </div>

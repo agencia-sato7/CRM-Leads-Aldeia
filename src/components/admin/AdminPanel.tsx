@@ -153,6 +153,9 @@ export function AdminPanel() {
                   Orçamentos Realizados
                 </TableHead>
                 <TableHead className="text-center">
+                  Valor Total Orçado
+                </TableHead>
+                <TableHead className="text-center">
                   Orçamentos Fechados
                 </TableHead>
                 <TableHead className="text-center">Conversão</TableHead>
@@ -170,59 +173,72 @@ export function AdminPanel() {
                     userOpps.length > 0
                       ? (wonOpps.length / userOpps.length) * 100
                       : 0
+                  const totalValue = userOpps.reduce(
+                    (acc, o) => acc + (o.value || 0),
+                    0,
+                  )
                   return {
                     user,
                     userOpps: userOpps.length,
+                    totalValue,
                     wonOpps: wonOpps.length,
                     convRate,
                   }
                 })
-                .sort((a, b) => b.convRate - a.convRate)
-                .map(({ user, userOpps, wonOpps, convRate }, index) => (
-                  <TableRow key={user.id} className="hover:bg-gray-50/50">
-                    <TableCell className="font-semibold text-gray-900 flex items-center gap-2">
-                      {index === 0 && (
-                        <Trophy className="w-4 h-4 text-yellow-500" />
-                      )}
-                      {user.name}
-                    </TableCell>
-                    <TableCell className="text-center font-medium text-gray-600">
-                      {userOpps}
-                    </TableCell>
-                    <TableCell className="text-center font-bold text-green-600">
-                      {wonOpps}
-                    </TableCell>
-                    <TableCell className="text-center font-bold text-gray-900">
-                      {convRate.toFixed(1)}%
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Switch
-                          checked={user.isLocked}
-                          onCheckedChange={(v) =>
-                            updateUser(user.id, { isLocked: v })
-                          }
-                          className="data-[state=checked]:bg-red-600"
-                        />
-                        {user.isLocked ? (
-                          <Badge
-                            variant="destructive"
-                            className="bg-red-100 text-red-700 hover:bg-red-100"
-                          >
-                            <Lock className="w-3 h-3 mr-1" /> Bloqueado
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="bg-green-50 text-green-700 border-green-200"
-                          >
-                            <Unlock className="w-3 h-3 mr-1" /> Ativo
-                          </Badge>
+                .sort((a, b) => b.totalValue - a.totalValue)
+                .map(
+                  (
+                    { user, userOpps, totalValue, wonOpps, convRate },
+                    index,
+                  ) => (
+                    <TableRow key={user.id} className="hover:bg-gray-50/50">
+                      <TableCell className="font-semibold text-gray-900 flex items-center gap-2">
+                        {index === 0 && (
+                          <Trophy className="w-4 h-4 text-yellow-500" />
                         )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        {user.name}
+                      </TableCell>
+                      <TableCell className="text-center font-medium text-gray-600">
+                        {userOpps}
+                      </TableCell>
+                      <TableCell className="text-center font-medium text-gray-700">
+                        {formatBRL(totalValue)}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-green-600">
+                        {wonOpps}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-gray-900">
+                        {convRate.toFixed(1)}%
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Switch
+                            checked={user.isLocked}
+                            onCheckedChange={(v) =>
+                              updateUser(user.id, { isLocked: v })
+                            }
+                            className="data-[state=checked]:bg-red-600"
+                          />
+                          {user.isLocked ? (
+                            <Badge
+                              variant="destructive"
+                              className="bg-red-100 text-red-700 hover:bg-red-100"
+                            >
+                              <Lock className="w-3 h-3 mr-1" /> Bloqueado
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="bg-green-50 text-green-700 border-green-200"
+                            >
+                              <Unlock className="w-3 h-3 mr-1" /> Ativo
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ),
+                )}
             </TableBody>
           </Table>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Lock,
   Unlock,
@@ -7,8 +7,12 @@ import {
   MessageSquare,
   Paperclip,
   Send,
+  RefreshCw,
+  Database,
 } from 'lucide-react'
 import { useDataStore } from '@/stores/use-data-store'
+import { supabase } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -47,6 +51,41 @@ export function AdminPanel() {
   const [msgText, setMsgText] = useState('')
   const [fileUrl, setFileUrl] = useState('')
   const [selectedResources, setSelectedResources] = useState<string[]>([])
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [lastSync, setLastSync] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'sync_spreadsheet_last_run')
+      .single()
+      .then(({ data }) => {
+        if (
+          data?.value &&
+          typeof data.value === 'object' &&
+          'date' in data.value
+        ) {
+          setLastSync(data.value.date as string)
+        }
+      })
+  }, [])
+
+  const handleSync = async () => {
+    setIsSyncing(true)
+    try {
+      const { error } = await supabase.functions.invoke(
+        'sync-external-spreadsheet',
+      )
+      if (error) throw new Error(error.message || 'Erro desconhecido')
+      toast.success('Sincronização concluída com sucesso!')
+      setLastSync(new Date().toISOString())
+    } catch (err: any) {
+      toast.error('Erro na sincronização: ' + err.message)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   if (!currentUser) return null
 
@@ -104,7 +143,7 @@ export function AdminPanel() {
 
   return (
     <div className="animate-fade-in">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-4 text-emerald-600">
             <DollarSign className="w-5 h-5" />
@@ -132,6 +171,37 @@ export function AdminPanel() {
           <p className="text-sm text-gray-500 mt-1">
             {openOppsUSD.length} propostas ativas
           </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-4 text-indigo-600">
+              <Database className="w-5 h-5" />
+              <h2 className="text-lg font-bold text-gray-900">
+                Sincronização de Dados
+              </h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Integração com Planilha Google externa. Sincroniza Leads,
+              Oportunidades e Clientes.
+            </p>
+            <p className="text-xs text-gray-500 mb-4 font-mono bg-gray-50 p-2 rounded">
+              Última sync:{' '}
+              {lastSync
+                ? new Date(lastSync).toLocaleString('pt-BR')
+                : 'Nunca realizada'}
+            </p>
+          </div>
+          <Button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            <RefreshCw
+              className={cn('w-4 h-4 mr-2', isSyncing && 'animate-spin')}
+            />
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
+          </Button>
         </div>
       </div>
 

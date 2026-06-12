@@ -2,6 +2,6 @@
   "_versions": {
     "send-onboarding-email": 16,
     "send-recovery-email": 15,
-    "sync-external-spreadsheet": 1
+    "sync-external-spreadsheet": 2
   }
 }

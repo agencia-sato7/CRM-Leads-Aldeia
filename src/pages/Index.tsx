@@ -26,9 +26,14 @@ import { format, isAfter, subDays } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
+import { RefreshCw } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function Index() {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const {
     currentUser,
     users,
@@ -36,10 +41,43 @@ export default function Index() {
     opportunities,
     messages,
     markMessageRead,
+    fetchInitialData,
   } = useDataStore()
 
   const [region, setRegion] = useState<'all' | 'Brazil'>('all')
   const [selectedUserId, setSelectedUserId] = useState<string>('all')
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const handleSyncSpreadsheet = async () => {
+    try {
+      setIsSyncing(true)
+      const { data, error } = await supabase.functions.invoke(
+        'sync-external-spreadsheet',
+      )
+
+      if (error) throw new Error(error.message || 'Erro ao sincronizar')
+      if (data?.error) throw new Error(data.error)
+
+      if (data?.success) {
+        toast({
+          title: 'Sincronização Concluída',
+          description: `${data.stats.newLeads} leads novos, ${data.stats.updatedLeads} atualizados, ${data.stats.newOpps} novas oportunidades.`,
+          variant: 'default',
+        })
+        if (fetchInitialData) {
+          fetchInitialData()
+        }
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Erro na sincronização',
+        description: err.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -131,6 +169,20 @@ export default function Index() {
           >
             Acessar Resultado Mensal
           </Button>
+
+          {currentUser.role === 'ADMIN' && (
+            <Button
+              variant="outline"
+              className="h-10 border-gray-200 text-gray-700 bg-white shadow-sm gap-2"
+              onClick={handleSyncSpreadsheet}
+              disabled={isSyncing}
+            >
+              <RefreshCw
+                className={cn('w-4 h-4', isSyncing && 'animate-spin')}
+              />
+              Sincronizar Planilha
+            </Button>
+          )}
 
           {currentUser.role === 'ADMIN' && (
             <div className="flex items-center gap-2">

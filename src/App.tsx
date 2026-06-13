@@ -21,6 +21,7 @@ import Customers from './pages/Customers'
 import Products from './pages/Products'
 import MonthlyResults from './pages/MonthlyResults'
 import NotFound from './pages/NotFound'
+import Docs from './pages/Docs'
 import { RequireRole } from './components/RequireRole'
 import { RequirePermission } from './components/RequirePermission'
 import Login from './pages/Login'
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/docs" element={<Docs />} />
 
             <Route
               element={

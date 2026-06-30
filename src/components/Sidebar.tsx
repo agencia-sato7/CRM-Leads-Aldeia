@@ -12,6 +12,7 @@ import {
   Key,
   Building2,
   PackageSearch,
+  ScrollText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -111,6 +112,11 @@ export function Sidebar() {
   if (currentUser.role === 'ADMIN') {
     navItems.push({ icon: UserCog, label: 'Equipe', path: '/team' })
     navItems.push({ icon: Key, label: 'Controle de Acesso', path: '/roles' })
+    navItems.push({
+      icon: ScrollText,
+      label: 'Logs de Atividade',
+      path: '/admin/logs',
+    })
     navItems.push({ icon: ShieldCheck, label: 'Gestão Admin', path: '/admin' })
   }
 

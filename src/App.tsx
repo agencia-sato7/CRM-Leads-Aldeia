@@ -159,6 +159,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/admin/logs"
+                element={
+                  <RequireRole role="ADMIN">
+                    <AdminLogs />
+                  </RequireRole>
+                }
+              />
+              <Route
                 path="/roles"
                 element={
                   <RequireRole role="ADMIN">

@@ -1,7 +1,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.13'
-import { corsHeaders } from '../_shared/cors.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+}
 
 // SMTP configuration from environment variables
 const SMTP_HOST = Deno.env.get('SMTP_HOST')
@@ -79,33 +84,35 @@ Deno.serve(async (req: Request) => {
 
     // Email content (HTML)
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
-        <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb;">
-          <h1 style="color: #227b50; margin: 0; font-size: 28px; letter-spacing: -0.5px;">Aldeia Acabamentos</h1>
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; background-color: #1a6b4a; padding: 32px 20px;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: -0.5px; font-weight: 700;">Aldeia Acabamentos</h1>
         </div>
         
-        <h2 style="color: #111827; font-size: 20px; margin-top: 0;">Olá,</h2>
-        
-        <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">
-          Recebemos uma solicitação para redefinir a senha da sua conta no CRM Aldeia Acabamentos.
-        </p>
-        
-        <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">
-          Para cadastrar uma nova senha, por favor, clique no botão abaixo:
-        </p>
-        
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${actionLink}" style="background-color: #227b50; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block;">Redefinir minha senha</a>
+        <div style="padding: 40px 32px;">
+          <h2 style="color: #111827; font-size: 22px; margin-top: 0; margin-bottom: 16px;">Olá,</h2>
+          
+          <p style="color: #4b5563; line-height: 1.6; font-size: 16px; margin-bottom: 24px;">
+            Recebemos uma solicitação para redefinir a senha da sua conta no CRM Aldeia Acabamentos.
+          </p>
+          
+          <p style="color: #4b5563; line-height: 1.6; font-size: 16px; margin-bottom: 32px;">
+            Para cadastrar uma nova senha, por favor, clique no botão abaixo:
+          </p>
+          
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${actionLink}" style="background-color: #2d9066; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; transition: background-color 0.2s;">Redefinir Minha Senha</a>
+          </div>
+          
+          <p style="color: #4b5563; line-height: 1.6; font-size: 16px; margin-top: 32px;">
+            Ou copie e cole o link abaixo no seu navegador:
+            <br>
+            <a href="${actionLink}" style="color: #1a6b4a; word-break: break-all; font-size: 14px; display: inline-block; margin-top: 8px;">${actionLink}</a>
+          </p>
         </div>
-        
-        <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">
-          Ou copie e cole o link abaixo no seu navegador:
-          <br>
-          <a href="${actionLink}" style="color: #227b50; word-break: break-all; font-size: 14px;">${actionLink}</a>
-        </p>
 
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 14px; margin: 0;">
+        <div style="background-color: #f9fafb; padding: 24px 32px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.5; text-align: center;">
             Se você não solicitou esta alteração, ignore este e-mail. Sua senha permanecerá a mesma.
           </p>
         </div>

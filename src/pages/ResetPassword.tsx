@@ -9,15 +9,26 @@ import { useAuth } from '@/hooks/use-auth'
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { session, loading: authLoading } = useAuth()
+  const { session, loading: authLoading, signOut } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!session) {
       toast.error('Sessão inválida. Solicite um novo link de recuperação.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('As senhas não coincidem.')
+      return
+    }
+
+    if (password.length < 8) {
+      toast.error('A senha deve ter no mínimo 8 caracteres.')
       return
     }
 
@@ -28,15 +39,16 @@ export default function ResetPassword() {
     if (error) {
       toast.error('Erro ao atualizar a senha: ' + error.message)
     } else {
-      toast.success('Senha atualizada com sucesso!')
-      navigate('/')
+      toast.success('Senha alterada com sucesso!')
+      await signOut()
+      navigate('/login')
     }
   }
 
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#227b50]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a6b4a]"></div>
       </div>
     )
   }
@@ -44,7 +56,7 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-down">
-        <div className="flex justify-center text-[#227b50]">
+        <div className="flex justify-center text-[#1a6b4a]">
           <ShieldCheck className="w-12 h-12" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -67,7 +79,7 @@ export default function ResetPassword() {
               </p>
               <Button
                 onClick={() => navigate('/forgot-password')}
-                className="w-full bg-[#227b50] hover:bg-[#185e3c] text-white"
+                className="w-full bg-[#1a6b4a] hover:bg-[#145239] text-white"
               >
                 Solicitar novo link
               </Button>
@@ -85,8 +97,25 @@ export default function ResetPassword() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="h-11"
-                    minLength={6}
-                    placeholder="Mínimo 6 caracteres"
+                    minLength={8}
+                    placeholder="Mínimo 8 caracteres"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Confirmar Nova Senha
+                </label>
+                <div className="mt-1">
+                  <Input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-11"
+                    minLength={8}
+                    placeholder="Confirme sua nova senha"
                   />
                 </div>
               </div>
@@ -95,9 +124,9 @@ export default function ResetPassword() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 text-base bg-[#227b50] hover:bg-[#185e3c] text-white rounded-xl shadow-md transition-all"
+                  className="w-full h-11 text-base bg-[#1a6b4a] hover:bg-[#145239] text-white rounded-xl shadow-md transition-all"
                 >
-                  {loading ? 'Atualizando...' : 'Atualizar Senha'}
+                  {loading ? 'Atualizando...' : 'Redefinir Minha Senha'}
                 </Button>
               </div>
             </form>

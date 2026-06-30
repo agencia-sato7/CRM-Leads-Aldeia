@@ -96,4 +96,3 @@ CREATE TRIGGER trg_audit_meetings_insert
 CREATE TRIGGER trg_audit_meetings_update
   AFTER UPDATE ON public.meetings
   FOR EACH ROW EXECUTE FUNCTION public.log_audit_action();
-$$

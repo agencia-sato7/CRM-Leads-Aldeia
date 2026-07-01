@@ -17,6 +17,7 @@ export type LeadStatus =
   | 'Em Negociação'
   | 'Ganho'
   | 'Perdido'
+  | 'Não Qualificado'
 export type Country = 'Brazil' | 'USA'
 export type LeadOrigin =
   | 'Site'

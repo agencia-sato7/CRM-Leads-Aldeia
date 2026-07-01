@@ -216,7 +216,11 @@ export default function Leads() {
         .select('*, meetings(*), lead_products(*)', { count: 'exact' })
 
       if (filterRegion !== 'all') query = query.eq('country', filterRegion)
-      if (filterStatus !== 'all') query = query.eq('status', filterStatus)
+      if (filterStatus === 'all') {
+        query = query.neq('status', 'Não Qualificado')
+      } else {
+        query = query.eq('status', filterStatus)
+      }
       if (filterOrigin !== 'all') query = query.eq('origin', filterOrigin)
       if (filterUser !== 'all') query = query.eq('user_id', filterUser)
       if (filterProduct !== 'all') query = query.eq('product_id', filterProduct)
@@ -348,7 +352,8 @@ export default function Leads() {
           lead.scheduledMeetingDate &&
           new Date(lead.scheduledMeetingDate) < new Date() &&
           lead.status !== 'Ganho' &&
-          lead.status !== 'Perdido',
+          lead.status !== 'Perdido' &&
+          lead.status !== 'Não Qualificado',
       ).length
 
       if (expiredCount > 0) {
@@ -562,6 +567,7 @@ export default function Leads() {
       'Em Negociação': 'bg-purple-100 text-purple-700',
       Ganho: 'bg-green-100 text-green-700',
       Perdido: 'bg-red-100 text-red-700',
+      'Não Qualificado': 'bg-gray-200 text-gray-500',
     }
     return colors[status] || 'bg-gray-100 text-gray-700'
   }
@@ -652,6 +658,31 @@ export default function Leads() {
                     <SelectContent>
                       <SelectItem value="Brazil">Brasil</SelectItem>
                       <SelectItem value="USA">Internacional</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status</label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(v: LeadStatus) =>
+                      setFormData({ ...formData, status: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Novo">Novo</SelectItem>
+                      <SelectItem value="Qualificado">Qualificado</SelectItem>
+                      <SelectItem value="Em Negociação">
+                        Em Negociação
+                      </SelectItem>
+                      <SelectItem value="Ganho">Ganho</SelectItem>
+                      <SelectItem value="Perdido">Perdido</SelectItem>
+                      <SelectItem value="Não Qualificado">
+                        Não Qualificado
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -861,6 +892,7 @@ export default function Leads() {
               <SelectItem value="Em Negociação">Em Negociação</SelectItem>
               <SelectItem value="Ganho">Ganho</SelectItem>
               <SelectItem value="Perdido">Perdido</SelectItem>
+              <SelectItem value="Não Qualificado">Não Qualificado</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterRegion} onValueChange={setFilterRegion}>
@@ -1010,7 +1042,13 @@ export default function Leads() {
               </TableHeader>
               <TableBody>
                 {paginatedLeads.map((lead) => (
-                  <TableRow key={lead.id} className="hover:bg-gray-50/50 group">
+                  <TableRow
+                    key={lead.id}
+                    className={cn(
+                      'hover:bg-gray-50/50 group',
+                      lead.status === 'Não Qualificado' && 'opacity-60',
+                    )}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="font-semibold text-gray-900">
@@ -1062,7 +1100,9 @@ export default function Leads() {
                         className="inline-block"
                         onClick={() => {
                           const isTerminal =
-                            lead.status === 'Ganho' || lead.status === 'Perdido'
+                            lead.status === 'Ganho' ||
+                            lead.status === 'Perdido' ||
+                            lead.status === 'Não Qualificado'
                           const notOwnerBlock =
                             currentUser.role !== 'ADMIN' &&
                             lead.userId &&
@@ -1086,6 +1126,7 @@ export default function Leads() {
                           disabled={
                             lead.status === 'Perdido' ||
                             lead.status === 'Ganho' ||
+                            lead.status === 'Não Qualificado' ||
                             !(
                               currentUser.role === 'ADMIN' ||
                               lead.userId === currentUser.id ||
@@ -1219,6 +1260,7 @@ export default function Leads() {
                               'Em Negociação',
                               'Ganho',
                               'Perdido',
+                              'Não Qualificado',
                             ].map((s) => (
                               <SelectItem
                                 key={s}
@@ -1265,7 +1307,8 @@ export default function Leads() {
                       </button>
                     </TableCell>
                     <TableCell>
-                      {lead.status === 'Perdido' ? (
+                      {lead.status === 'Perdido' ||
+                      lead.status === 'Não Qualificado' ? (
                         <span className="text-gray-400 text-xs">-</span>
                       ) : !lead.scheduledMeetingDate ? (
                         (currentUser.role === 'ADMIN' ||

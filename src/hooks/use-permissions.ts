@@ -16,7 +16,7 @@ export function usePermissions(resource: string) {
     async function checkPermissions() {
       if (!currentUser) return
 
-      if (currentUser.role === 'ADMIN') {
+      if (currentUser.role?.toUpperCase() === 'ADMIN') {
         setPermissions({
           canRead: true,
           canCreate: true,

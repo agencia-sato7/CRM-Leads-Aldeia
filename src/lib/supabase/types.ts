@@ -744,6 +744,8 @@ export type Database = {
         }
         Returns: Json
       }
+      find_profile_by_name: { Args: { search_name: string }; Returns: string }
+      unaccent: { Args: { '': string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -1,7 +1,13 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { corsHeaders } from '../_shared/cors.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { parse } from 'csv-parse/sync'
+import { parse } from 'npm:csv-parse@5.5.6/sync'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+}
 
 interface SyncStats {
   total: number
@@ -120,7 +126,10 @@ export async function processSync(
   }
 
   const idxData = findIdx('data', 'date')
-  const idxNome = findIdx('nome', 'contato', 'name', 'cliente')
+  let idxNome = findIdx('nome', 'contato', 'name', 'cliente')
+  if (idxNome === -1) {
+    idxNome = 1
+  }
   const idxEmpresa = findIdx('empresa', 'company')
   const idxTelefone = findIdx(
     'telefone',
@@ -139,13 +148,17 @@ export async function processSync(
     'service',
     'objetivo',
   )
-  const idxResponsavel = findIdx(
+  let idxResponsavel = findIdx(
     'responsavel',
     'responsável',
     'vendedor',
     'seller',
     'owner',
   )
+  if (idxResponsavel === -1) {
+    // Fallback to Column E (index 4) if it's the known structure
+    idxResponsavel = 4
+  }
   const idxRespondeu = findIdx('respondeu', 'responded', 'reply')
   const idxQualificado = findIdx('qualificado', 'qualified')
   const idxFechou = findIdx('fechou', 'closed', 'won', 'ganho')
@@ -158,21 +171,70 @@ export async function processSync(
     return normalizeText(row[idx])
   }
 
-  const { data: profilesData } = await supabase
-    .from('profiles')
-    .select('id, name, email, role')
-  const profiles = profilesData || []
+  const ownerCache = new Map<string, string | null>()
 
-  const findOwnerByName = (name: string): string | null => {
+  const findOwnerByName = async (name: string): Promise<string | null> => {
     if (!name) return null
-    const target = name.toLowerCase().trim()
-    const match = profiles.find(
-      (p: any) => p.name?.toLowerCase().trim() === target,
-    )
-    return match?.id || null
-  }
+    const cacheKey = name.toLowerCase().trim()
+    if (ownerCache.has(cacheKey)) return ownerCache.get(cacheKey)!
 
-  const defaultAdminId = adminUserId
+    const { data: matchedId, error: rpcError } = await supabase.rpc(
+      'find_profile_by_name',
+      { search_name: name },
+    )
+
+    if (rpcError) {
+      console.warn(
+        `[sync] RPC error finding profile for "${name}":`,
+        rpcError.message,
+      )
+    }
+
+    if (matchedId) {
+      ownerCache.set(cacheKey, matchedId as string)
+      return matchedId as string
+    }
+
+    const slug = name
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '.')
+      .replace(/^\.+|\.+$/g, '')
+    const newEmail = `${slug}@sato7.com.br`
+
+    const { data: newUser, error: createError } =
+      await supabase.auth.admin.createUser({
+        email: newEmail,
+        password: 'Skip@Pass',
+        email_confirm: true,
+        user_metadata: { name, role: 'COMMERCIAL' },
+      })
+
+    if (newUser?.user?.id) {
+      ownerCache.set(cacheKey, newUser.user.id)
+      return newUser.user.id
+    }
+
+    if (createError) {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', newEmail)
+        .maybeSingle()
+      if (existingProfile?.id) {
+        ownerCache.set(cacheKey, existingProfile.id)
+        return existingProfile.id
+      }
+    }
+
+    console.warn(
+      `[sync] No profile match for responsible: "${name}" — lead will be unassigned (user_id = NULL)`,
+    )
+    ownerCache.set(cacheKey, null)
+    return null
+  }
 
   for (let i = 1; i < records.length; i++) {
     const row = records[i] as string[]
@@ -203,7 +265,13 @@ export async function processSync(
     const parsedDate = parseDate(dataRaw)
     const responded = parseBooleanFlag(respondeuRaw)
 
-    const ownerId = responsavel ? findOwnerByName(responsavel) : defaultAdminId
+    const ownerId = responsavel ? await findOwnerByName(responsavel) : null
+
+    if (responsavel && !ownerId) {
+      console.warn(
+        `[sync] No profile match for responsible: "${responsavel}" — lead will be unassigned (user_id = NULL)`,
+      )
+    }
 
     let mappedStatus = 'Novo'
     if (parseNegativeFlag(qualificadoRaw) && !parseBooleanFlag(fechouRaw)) {
@@ -290,51 +358,69 @@ export async function processSync(
     let leadId: string | null = existingLead?.id || null
 
     if (existingLead) {
-      const { error } = await supabase
-        .from('leads')
-        .update(leadPayload)
-        .eq('id', leadId)
+      // Check if anything actually changed to avoid spamming audit logs
+      const hasChanges =
+        existingLead.status !== mappedStatus ||
+        existingLead.user_id !== ownerId ||
+        existingLead.contact !== contact ||
+        (existingLead.phone || null) !== (telefone || null) ||
+        (existingLead.email || null) !== (email || null) ||
+        (existingLead.notes || null) !== (observacao || null) ||
+        (existingLead.objectives || null) !== (interesse || null) ||
+        existingLead.origin !== plataforma ||
+        existingLead.responded !== responded ||
+        Number(existingLead.estimated_value || 0) !== parsedValue ||
+        Number(existingLead.quantity || 1) !== parsedQty
 
-      if (!error) {
-        stats.updatedLeads++
+      if (hasChanges) {
+        const { error } = await supabase
+          .from('leads')
+          .update(leadPayload)
+          .eq('id', leadId)
 
-        const responsibilityChanged = existingLead.user_id !== ownerId
-        const auditMetadata = {
-          source: 'spreadsheet_sync',
-          responsibility_changed: responsibilityChanged,
-          previous_user_id: existingLead.user_id,
-          new_user_id: ownerId,
-          before: {
-            status: existingLead.status,
-            user_id: existingLead.user_id,
-            contact: existingLead.contact,
-            phone: existingLead.phone,
-            email: existingLead.email,
-            notes: existingLead.notes,
-            objectives: existingLead.objectives,
-            origin: existingLead.origin,
-            responded: existingLead.responded,
-            estimated_value: existingLead.estimated_value,
-            quantity: existingLead.quantity,
-          },
-          after: {
-            status: mappedStatus,
-            user_id: ownerId,
-            contact,
-            phone: telefone || null,
-            email: email || null,
-            notes: observacao || null,
-            objectives: interesse || null,
-            origin: plataforma,
-            responded,
-            estimated_value: parsedValue,
-            quantity: parsedQty,
-          },
-          synced_by: adminUserId,
+        if (!error) {
+          stats.updatedLeads++
+
+          const responsibilityChanged = existingLead.user_id !== ownerId
+          const auditMetadata = {
+            source: 'spreadsheet_sync',
+            responsibility_changed: responsibilityChanged,
+            previous_user_id: existingLead.user_id,
+            new_user_id: ownerId,
+            responsible_name_provided: responsavel || null,
+            responsible_match_found: !!ownerId,
+            before: {
+              status: existingLead.status,
+              user_id: existingLead.user_id,
+              contact: existingLead.contact,
+              phone: existingLead.phone,
+              email: existingLead.email,
+              notes: existingLead.notes,
+              objectives: existingLead.objectives,
+              origin: existingLead.origin,
+              responded: existingLead.responded,
+              estimated_value: existingLead.estimated_value,
+              quantity: existingLead.quantity,
+            },
+            after: {
+              status: mappedStatus,
+              user_id: ownerId,
+              contact,
+              phone: telefone || null,
+              email: email || null,
+              notes: observacao || null,
+              objectives: interesse || null,
+              origin: plataforma,
+              responded,
+              estimated_value: parsedValue,
+              quantity: parsedQty,
+            },
+            synced_by: adminUserId,
+          }
+
+          await logAuditEntry(supabase, adminUserId, leadId!, auditMetadata)
+          stats.auditLogs++
         }
-
-        await logAuditEntry(supabase, adminUserId, leadId!, auditMetadata)
-        stats.auditLogs++
       }
     } else {
       const { data: newLead, error } = await supabase
@@ -353,6 +439,8 @@ export async function processSync(
           action: 'insert',
           responsibility_assigned: !!ownerId,
           new_user_id: ownerId,
+          responsible_name_provided: responsavel || null,
+          responsible_match_found: !!ownerId,
           data: leadPayload,
           synced_by: adminUserId,
         }
@@ -360,6 +448,19 @@ export async function processSync(
         await logAuditEntry(supabase, adminUserId, leadId!, auditMetadata)
         stats.auditLogs++
       }
+    }
+
+    if (responsavel && !ownerId && existingLead && !existingLead.user_id) {
+      await logAuditEntry(supabase, adminUserId, leadId!, {
+        source: 'spreadsheet_sync',
+        event: 'unmatched_responsible',
+        responsible_name_provided: responsavel,
+        responsible_match_found: false,
+        lead_contact: contact,
+        lead_company: empresa,
+        synced_by: adminUserId,
+      })
+      stats.auditLogs++
     }
 
     if (!leadId) continue

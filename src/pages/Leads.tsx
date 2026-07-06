@@ -1081,10 +1081,13 @@ export default function Leads() {
                     <TableCell>
                       {lead.userId ? (
                         <div className="text-sm font-medium text-gray-700">
-                          {users.find((u) => u.id === lead.userId)?.name || '-'}
+                          {users.find((u) => u.id === lead.userId)?.name ||
+                            'Não Atribuído'}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">-</span>
+                        <span className="text-gray-400 text-xs">
+                          Não Atribuído
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>

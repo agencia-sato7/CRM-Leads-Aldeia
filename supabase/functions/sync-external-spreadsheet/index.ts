@@ -3,6 +3,441 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { parse } from 'csv-parse/sync'
 
+interface SyncStats {
+  total: number
+  newLeads: number
+  updatedLeads: number
+  newOpps: number
+  updatedOpps: number
+  newCustomers: number
+  auditLogs: number
+}
+
+function normalizeText(value: string | undefined | null): string {
+  if (!value) return ''
+  return value.trim()
+}
+
+function parseBooleanFlag(value: string | undefined | null): boolean {
+  if (!value) return false
+  const lower = value.toLowerCase().trim()
+  return ['sim', 'yes', 'y', 's', 'true', '1', 'x', 'v', 'ok'].includes(lower)
+}
+
+function parseNegativeFlag(value: string | undefined | null): boolean {
+  if (!value) return false
+  const lower = value.toLowerCase().trim()
+  return ['não', 'nao', 'no', 'n', 'false', '0'].includes(lower)
+}
+
+function parseDate(value: string | undefined | null): string | null {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const brMatch = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})(.*)$/)
+  if (brMatch) {
+    const [, day, month, year, rest] = brMatch
+    const timePart = rest?.match(/(\d{2}):(\d{2})/)
+    const iso = `${year}-${month}-${day}T${timePart ? `${timePart[1]}:${timePart[2]}` : '00:00'}:00-03:00`
+    const parsed = new Date(iso)
+    if (!isNaN(parsed.getTime())) return parsed.toISOString()
+  }
+
+  const parsed = new Date(trimmed)
+  if (!isNaN(parsed.getTime())) return parsed.toISOString()
+  return null
+}
+
+function parseCurrency(value: string | undefined | null): number {
+  if (!value) return 0
+  const cleaned = value.replace(/[^0-9,-]+/g, '').replace(',', '.')
+  const parsed = parseFloat(cleaned)
+  return isNaN(parsed) ? 0 : parsed
+}
+
+async function logAuditEntry(
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+  entityId: string,
+  metadata: Record<string, any>,
+): Promise<void> {
+  await supabase.from('audit_logs').insert({
+    user_id: userId,
+    action_type: 'UPDATE',
+    entity_type: 'leads',
+    entity_id: entityId,
+    metadata,
+  })
+}
+
+export async function processSync(
+  supabase: ReturnType<typeof createClient>,
+  adminUserId: string | null,
+): Promise<{ success: boolean; message: string; stats: SyncStats }> {
+  const stats: SyncStats = {
+    total: 0,
+    newLeads: 0,
+    updatedLeads: 0,
+    newOpps: 0,
+    updatedOpps: 0,
+    newCustomers: 0,
+    auditLogs: 0,
+  }
+
+  const SHEET_URL =
+    'https://docs.google.com/spreadsheets/d/1sSy0o-F-gpAlXGCRXnMMLF18YgOYCXjwmqP0kp3oJI4/export?format=csv&gid=1168122098'
+
+  const response = await fetch(SHEET_URL)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch spreadsheet: ${response.statusText}`)
+  }
+
+  const csvText = await response.text()
+  const records = parse(csvText, {
+    skip_empty_lines: true,
+    relax_column_count: true,
+  })
+
+  if (!records || records.length < 2) {
+    throw new Error('Spreadsheet is empty or invalid.')
+  }
+
+  const headers = (records[0] as string[]).map((h: string) =>
+    h
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
+  )
+
+  const findIdx = (...patterns: string[]): number => {
+    for (const p of patterns) {
+      const idx = headers.findIndex((h: string) => h.includes(p))
+      if (idx >= 0) return idx
+    }
+    return -1
+  }
+
+  const idxData = findIdx('data', 'date')
+  const idxNome = findIdx('nome', 'contato', 'name', 'cliente')
+  const idxEmpresa = findIdx('empresa', 'company')
+  const idxTelefone = findIdx(
+    'telefone',
+    'celular',
+    'phone',
+    'whats',
+    'whatsapp',
+  )
+  const idxEmail = findIdx('email', 'e-mail')
+  const idxObs = findIdx('observacao', 'observacoes', 'obs', 'notes', 'note')
+  const idxPlataforma = findIdx('plataforma', 'origem', 'origin', 'canal')
+  const idxInteresse = findIdx(
+    'interesse',
+    'servico',
+    'produto',
+    'service',
+    'objetivo',
+  )
+  const idxResponsavel = findIdx(
+    'responsavel',
+    'responsável',
+    'vendedor',
+    'seller',
+    'owner',
+  )
+  const idxRespondeu = findIdx('respondeu', 'responded', 'reply')
+  const idxQualificado = findIdx('qualificado', 'qualified')
+  const idxFechou = findIdx('fechou', 'closed', 'won', 'ganho')
+  const idxStatus = findIdx('status', 'fase', 'etapa')
+  const idxValor = findIdx('valor', 'orcamento', 'preco')
+  const idxQuantidade = findIdx('quantidade', 'qtd', 'qty')
+
+  const getCell = (row: string[], idx: number): string => {
+    if (idx < 0 || idx >= row.length) return ''
+    return normalizeText(row[idx])
+  }
+
+  const { data: profilesData } = await supabase
+    .from('profiles')
+    .select('id, name, email, role')
+  const profiles = profilesData || []
+
+  const findOwnerByName = (name: string): string | null => {
+    if (!name) return null
+    const target = name.toLowerCase().trim()
+    const match = profiles.find(
+      (p: any) => p.name?.toLowerCase().trim() === target,
+    )
+    return match?.id || null
+  }
+
+  const defaultAdminId = adminUserId
+
+  for (let i = 1; i < records.length; i++) {
+    const row = records[i] as string[]
+    const nome = getCell(row, idxNome)
+    const empresa = getCell(row, idxEmpresa) || nome || 'Empresa Desconhecida'
+    const telefone = getCell(row, idxTelefone)
+    const email = getCell(row, idxEmail)
+    const observacao = getCell(row, idxObs)
+    const plataforma = getCell(row, idxPlataforma) || 'Planilha'
+    const interesse = getCell(row, idxInteresse)
+    const responsavel = getCell(row, idxResponsavel)
+    const respondeuRaw = getCell(row, idxRespondeu)
+    const qualificadoRaw = getCell(row, idxQualificado)
+    const fechouRaw = getCell(row, idxFechou)
+    const statusRaw = getCell(row, idxStatus)
+    const valorRaw = getCell(row, idxValor)
+    const quantidadeRaw = getCell(row, idxQuantidade)
+    const dataRaw = getCell(row, idxData)
+
+    if (!nome && !empresa && !telefone && !email) continue
+    stats.total++
+
+    const contact = nome || empresa || 'Sem Nome'
+    const parsedValue = parseCurrency(valorRaw)
+    const parsedQty = quantidadeRaw
+      ? parseFloat(quantidadeRaw.replace(',', '.')) || 1
+      : 1
+    const parsedDate = parseDate(dataRaw)
+    const responded = parseBooleanFlag(respondeuRaw)
+
+    const ownerId = responsavel ? findOwnerByName(responsavel) : defaultAdminId
+
+    let mappedStatus = 'Novo'
+    if (parseNegativeFlag(qualificadoRaw) && !parseBooleanFlag(fechouRaw)) {
+      mappedStatus = 'Não Qualificado'
+    } else if (parseBooleanFlag(fechouRaw)) {
+      mappedStatus = 'Ganho'
+    } else {
+      const statusLower = statusRaw.toLowerCase()
+      if (statusLower.match(/ganho|fechado|sucesso/)) mappedStatus = 'Ganho'
+      else if (statusLower.match(/perdido|cancelado/)) mappedStatus = 'Perdido'
+      else if (statusLower.match(/negocia/)) mappedStatus = 'Em Negociação'
+      else if (statusLower.match(/qualificado/)) mappedStatus = 'Qualificado'
+      else if (qualificadoRaw && parseBooleanFlag(qualificadoRaw))
+        mappedStatus = 'Qualificado'
+    }
+
+    // Lead identification: prioritize phone, then name (contact), then email, then company
+    let existingLead: any = null
+    if (telefone) {
+      const { data } = await supabase
+        .from('leads')
+        .select(
+          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
+        )
+        .eq('phone', telefone)
+        .maybeSingle()
+      existingLead = data
+    }
+    if (!existingLead && nome) {
+      const { data } = await supabase
+        .from('leads')
+        .select(
+          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
+        )
+        .eq('contact', nome)
+        .maybeSingle()
+      existingLead = data
+    }
+    if (!existingLead && email) {
+      const { data } = await supabase
+        .from('leads')
+        .select(
+          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
+        )
+        .eq('email', email)
+        .maybeSingle()
+      existingLead = data
+    }
+    if (!existingLead && empresa !== 'Empresa Desconhecida') {
+      const { data } = await supabase
+        .from('leads')
+        .select(
+          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
+        )
+        .eq('company', empresa)
+        .maybeSingle()
+      existingLead = data
+    }
+
+    const leadPayload: Record<string, any> = {
+      contact,
+      company: empresa,
+      email: email || null,
+      phone: telefone || null,
+      origin: plataforma,
+      objectives: interesse || null,
+      notes: observacao || null,
+      status: mappedStatus,
+      estimated_value: parsedValue,
+      responded,
+      user_id: ownerId,
+      quantity: parsedQty,
+      country: 'Brazil',
+    }
+
+    if (parsedDate) {
+      leadPayload.created_at = parsedDate
+    }
+
+    if (existingLead && !responsavel) {
+      delete leadPayload.user_id
+    }
+
+    let leadId: string | null = existingLead?.id || null
+
+    if (existingLead) {
+      const { error } = await supabase
+        .from('leads')
+        .update(leadPayload)
+        .eq('id', leadId)
+
+      if (!error) {
+        stats.updatedLeads++
+
+        const responsibilityChanged = existingLead.user_id !== ownerId
+        const auditMetadata = {
+          source: 'spreadsheet_sync',
+          responsibility_changed: responsibilityChanged,
+          previous_user_id: existingLead.user_id,
+          new_user_id: ownerId,
+          before: {
+            status: existingLead.status,
+            user_id: existingLead.user_id,
+            contact: existingLead.contact,
+            phone: existingLead.phone,
+            email: existingLead.email,
+            notes: existingLead.notes,
+            objectives: existingLead.objectives,
+            origin: existingLead.origin,
+            responded: existingLead.responded,
+            estimated_value: existingLead.estimated_value,
+            quantity: existingLead.quantity,
+          },
+          after: {
+            status: mappedStatus,
+            user_id: ownerId,
+            contact,
+            phone: telefone || null,
+            email: email || null,
+            notes: observacao || null,
+            objectives: interesse || null,
+            origin: plataforma,
+            responded,
+            estimated_value: parsedValue,
+            quantity: parsedQty,
+          },
+          synced_by: adminUserId,
+        }
+
+        await logAuditEntry(supabase, adminUserId, leadId!, auditMetadata)
+        stats.auditLogs++
+      }
+    } else {
+      const { data: newLead, error } = await supabase
+        .from('leads')
+        .insert(leadPayload)
+        .select('id')
+        .single()
+      if (error) {
+        console.error('Error inserting lead:', error)
+      } else if (newLead) {
+        leadId = newLead.id
+        stats.newLeads++
+
+        const auditMetadata = {
+          source: 'spreadsheet_sync',
+          action: 'insert',
+          responsibility_assigned: !!ownerId,
+          new_user_id: ownerId,
+          data: leadPayload,
+          synced_by: adminUserId,
+        }
+
+        await logAuditEntry(supabase, adminUserId, leadId!, auditMetadata)
+        stats.auditLogs++
+      }
+    }
+
+    if (!leadId) continue
+
+    if (['Em Negociação', 'Ganho', 'Perdido'].includes(mappedStatus)) {
+      const { data: opps } = await supabase
+        .from('opportunities')
+        .select('id')
+        .eq('lead_id', leadId)
+      const opp = opps?.[0]
+
+      let oppStatus = 'Aberta'
+      if (mappedStatus === 'Ganho') oppStatus = 'Ganha'
+      if (mappedStatus === 'Perdido') oppStatus = 'Perdida'
+
+      const oppPayload: Record<string, any> = {
+        status: oppStatus,
+        value: parsedValue,
+        service: interesse || 'Não especificado',
+        quantity: parsedQty,
+      }
+
+      if (opp) {
+        const { error } = await supabase
+          .from('opportunities')
+          .update(oppPayload)
+          .eq('id', opp.id)
+        if (!error) stats.updatedOpps++
+      } else {
+        const { error } = await supabase.from('opportunities').insert({
+          lead_id: leadId,
+          user_id: ownerId,
+          type: 'Fee Mensal',
+          service: interesse || 'Não especificado',
+          value: parsedValue,
+          status: oppStatus,
+          quantity: parsedQty,
+        })
+        if (!error) stats.newOpps++
+      }
+    }
+
+    if (mappedStatus === 'Ganho') {
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('lead_id', leadId)
+        .maybeSingle()
+      if (!existingCustomer) {
+        const { error } = await supabase.from('customers').insert({
+          lead_id: leadId,
+          user_id: ownerId,
+          name: contact,
+          company: empresa,
+          email: email || null,
+          phone: telefone || null,
+        })
+        if (!error) stats.newCustomers++
+      }
+    }
+  }
+
+  await supabase.from('settings').upsert({
+    key: 'sync_spreadsheet_last_run',
+    value: {
+      date: new Date().toISOString(),
+      stats,
+    },
+    updated_at: new Date().toISOString(),
+  })
+
+  return {
+    success: true,
+    message: 'Sync process completed',
+    stats,
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -13,239 +448,58 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const SHEET_URL =
-      'https://docs.google.com/spreadsheets/d/1sSy0o-F-gpAlXGCRXnMMLF18YgOYCXjwmqP0kp3oJI4/export?format=csv&gid=1168122098'
+    let adminUserId: string | null = null
+    let isAdmin = false
 
-    const response = await fetch(SHEET_URL)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch spreadsheet: ${response.statusText}`)
+    const authHeader = req.headers.get('authorization')
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '')
+      const { data: userData } = await supabase.auth.getUser(token)
+      if (userData?.user) {
+        adminUserId = userData.user.id
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', adminUserId)
+          .maybeSingle()
+        isAdmin = profile?.role === 'ADMIN'
+      }
     }
 
-    const csvText = await response.text()
-    const records = parse(csvText, {
-      skip_empty_lines: true,
-      relax_column_count: true,
+    if (!isAdmin) {
+      const { data: adminUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', 'diretor@sato7.com.br')
+        .maybeSingle()
+      adminUserId = adminUser?.id || null
+    }
+
+    const result = await processSync(supabase, adminUserId)
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-
-    if (!records || records.length < 2) {
-      throw new Error('Spreadsheet is empty or invalid.')
-    }
-
-    const headers = records[0].map((h: string) => h.toLowerCase().trim())
-
-    const idxEmail = headers.findIndex(
-      (h: string) => h.includes('email') || h.includes('e-mail'),
-    )
-    const idxCompany = headers.findIndex(
-      (h: string) =>
-        h.includes('empresa') || h.includes('company') || h.includes('cliente'),
-    )
-    const idxName = headers.findIndex(
-      (h: string) => h.includes('nome') || h.includes('contato'),
-    )
-    const idxPhone = headers.findIndex(
-      (h: string) =>
-        h.includes('telefone') || h.includes('celular') || h.includes('phone'),
-    )
-    const idxStatus = headers.findIndex(
-      (h: string) =>
-        h.includes('status') || h.includes('fase') || h.includes('etapa'),
-    )
-    const idxValue = headers.findIndex(
-      (h: string) =>
-        h.includes('valor') || h.includes('orçamento') || h.includes('preço'),
-    )
-    const idxService = headers.findIndex(
-      (h: string) =>
-        h.includes('serviço') ||
-        h.includes('produto') ||
-        h.includes('interesse'),
-    )
-
-    const safeIdxEmail = idxEmail >= 0 ? idxEmail : 2
-    const safeIdxCompany = idxCompany >= 0 ? idxCompany : 1
-    const safeIdxName = idxName >= 0 ? idxName : 0
-    const safeIdxPhone = idxPhone >= 0 ? idxPhone : 3
-    const safeIdxStatus = idxStatus >= 0 ? idxStatus : 4
-    const safeIdxValue = idxValue >= 0 ? idxValue : 5
-    const safeIdxService = idxService >= 0 ? idxService : 6
-
-    const { data: adminUser } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', 'diretor@sato7.com.br')
-      .single()
-
-    const adminId = adminUser?.id
-
-    for (let i = 1; i < records.length; i++) {
-      const row = records[i]
-
-      const rawEmail = row[idxEmail >= 0 ? idxEmail : safeIdxEmail]?.trim()
-      const email = rawEmail || null
-
-      const rawCompany =
-        row[idxCompany >= 0 ? idxCompany : safeIdxCompany]?.trim()
-      const rawName = row[idxName >= 0 ? idxName : safeIdxName]?.trim()
-
-      const company = rawCompany || rawName || 'Empresa Desconhecida'
-      const contact = rawName || email || 'Sem Nome'
-
-      const phone = row[idxPhone >= 0 ? idxPhone : safeIdxPhone]?.trim() || null
-      const rawStatus =
-        row[idxStatus >= 0 ? idxStatus : safeIdxStatus]?.trim() || 'Novo'
-      const rawValue =
-        row[idxValue >= 0 ? idxValue : safeIdxValue]?.trim() || '0'
-      const service =
-        row[idxService >= 0 ? idxService : safeIdxService]?.trim() ||
-        'Não especificado'
-
-      let mappedStatus = 'Novo'
-      const statusLower = rawStatus.toLowerCase()
-      if (statusLower.match(/ganho|fechado|sucesso/)) mappedStatus = 'Ganho'
-      else if (statusLower.match(/perdido|cancelado/)) mappedStatus = 'Perdido'
-      else if (statusLower.match(/negocia/)) mappedStatus = 'Em Negociação'
-      else if (statusLower.match(/qualificado/)) mappedStatus = 'Qualificado'
-
-      const parsedValue =
-        parseFloat(rawValue.replace(/[^0-9,-]+/g, '').replace(',', '.')) || 0
-
-      let existingLead = null
-
-      if (email) {
-        const { data } = await supabase
-          .from('leads')
-          .select('id')
-          .eq('email', email)
-          .maybeSingle()
-        existingLead = data
-      }
-      if (!existingLead && company !== 'Empresa Desconhecida') {
-        const { data } = await supabase
-          .from('leads')
-          .select('id')
-          .eq('company', company)
-          .maybeSingle()
-        existingLead = data
-      }
-
-      let leadId = existingLead?.id
-
-      if (existingLead) {
-        await supabase
-          .from('leads')
-          .update({
-            contact,
-            phone,
-            status: mappedStatus,
-            estimated_value: parsedValue,
-            origin: 'Planilha',
-          })
-          .eq('id', leadId)
-      } else {
-        const { data: newLead, error } = await supabase
-          .from('leads')
-          .insert({
-            user_id: adminId,
-            contact,
-            company,
-            email,
-            phone,
-            status: mappedStatus,
-            estimated_value: parsedValue,
-            origin: 'Planilha',
-            country: 'Brazil',
-          })
-          .select('id')
-          .single()
-
-        if (error) console.error('Error inserting lead:', error)
-        if (newLead) leadId = newLead.id
-      }
-
-      if (!leadId) continue
-
-      if (['Em Negociação', 'Ganho', 'Perdido'].includes(mappedStatus)) {
-        const { data: opps } = await supabase
-          .from('opportunities')
-          .select('id')
-          .eq('lead_id', leadId)
-        const opp = opps?.[0]
-
-        let oppStatus = 'Aberta'
-        if (mappedStatus === 'Ganho') oppStatus = 'Ganha'
-        if (mappedStatus === 'Perdido') oppStatus = 'Perdida'
-
-        if (opp) {
-          await supabase
-            .from('opportunities')
-            .update({
-              status: oppStatus,
-              value: parsedValue,
-              service: service,
-            })
-            .eq('id', opp.id)
-        } else {
-          await supabase.from('opportunities').insert({
-            lead_id: leadId,
-            user_id: adminId,
-            type: 'Fee Mensal',
-            service: service,
-            value: parsedValue,
-            status: oppStatus,
-            quantity: 1,
-          })
-        }
-      }
-
-      if (mappedStatus === 'Ganho') {
-        const { data: existingCustomer } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('lead_id', leadId)
-          .maybeSingle()
-        if (existingCustomer) {
-          await supabase
-            .from('customers')
-            .update({
-              name: contact,
-              company,
-              email,
-              phone,
-            })
-            .eq('id', existingCustomer.id)
-        } else {
-          await supabase.from('customers').insert({
-            lead_id: leadId,
-            user_id: adminId,
-            name: contact,
-            company,
-            email,
-            phone,
-          })
-        }
-      }
-    }
-
-    await supabase.from('settings').upsert({
-      key: 'sync_spreadsheet_last_run',
-      value: { date: new Date().toISOString() },
-      updated_at: new Date().toISOString(),
-    })
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Sync process completed',
-        count: records.length - 1,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
   } catch (error: any) {
     console.error('Sync Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        stats: {
+          total: 0,
+          newLeads: 0,
+          updatedLeads: 0,
+          newOpps: 0,
+          updatedOpps: 0,
+          newCustomers: 0,
+          auditLogs: 0,
+        },
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      },
+    )
   }
 })

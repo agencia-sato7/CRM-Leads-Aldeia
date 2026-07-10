@@ -87,6 +87,7 @@ export default function Leads() {
     leads,
     addLead,
     updateLead,
+    transitionLeadStage,
     addOpportunity,
     currentUser,
     opportunities,
@@ -1230,16 +1231,17 @@ export default function Leads() {
                                 return
                               }
                             }
-                            const updatePayload: any = {
-                              status: v as LeadStatus,
+                            try {
+                              await transitionLeadStage(
+                                lead.id,
+                                v as LeadStatus,
+                                'manual',
+                              )
+                            } catch (err: any) {
+                              toast.error('Erro ao alterar status', {
+                                description: err.message,
+                              })
                             }
-                            if (
-                              v === 'Em Negociação' &&
-                              currentUser.role !== 'ADMIN'
-                            ) {
-                              updatePayload.userId = currentUser.id
-                            }
-                            await updateLead(lead.id, updatePayload)
                             fetchLeads()
                             if (v === 'Ganho') {
                               toast.success(

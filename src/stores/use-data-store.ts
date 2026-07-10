@@ -210,6 +210,11 @@ interface DataStore {
     lead: Omit<Lead, 'id' | 'createdAt' | 'meetings'>,
   ) => Promise<string>
   updateLead: (id: string, data: Partial<Lead>) => Promise<void>
+  transitionLeadStage: (
+    leadId: string,
+    newStatus: LeadStatus,
+    source?: string,
+  ) => Promise<void>
   addOpportunity: (
     opp: Omit<Opportunity, 'id' | 'createdAt' | 'updatedAt'>,
   ) => Promise<string>
@@ -711,7 +716,6 @@ export const useDataStore = create<DataStore>((set, get) => ({
     if (data.company !== undefined) updatePayload.company = data.company
     if (data.contact !== undefined) {
       updatePayload.contact = data.contact
-      updatePayload.company = data.contact
     }
     if (data.origin !== undefined) updatePayload.origin = data.origin
     if (data.email !== undefined) updatePayload.email = data.email
@@ -749,7 +753,14 @@ export const useDataStore = create<DataStore>((set, get) => ({
     }
 
     if (Object.keys(updatePayload).length > 0) {
-      await supabase.from('leads').update(updatePayload).eq('id', id)
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update(updatePayload)
+        .eq('id', id)
+      if (updateError) {
+        console.error('Failed to update lead:', updateError)
+        throw updateError
+      }
     }
 
     if (data.estimatedValue !== undefined || data.product_id !== undefined) {
@@ -823,6 +834,50 @@ export const useDataStore = create<DataStore>((set, get) => ({
         leads: state.leads.map((l) => (l.id === id ? { ...l, ...data } : l)),
       }))
     }
+  },
+
+  transitionLeadStage: async (leadId, newStatus, source = 'manual') => {
+    const { data, error } = await supabase.rpc('transition_lead_stage', {
+      p_lead_id: leadId,
+      p_new_status: newStatus,
+      p_source: source,
+    })
+
+    if (error) {
+      console.error('Transition error:', error)
+      throw error
+    }
+
+    const oppStatus =
+      newStatus === 'Ganho'
+        ? 'Ganha'
+        : newStatus === 'Perdido'
+          ? 'Perdida'
+          : newStatus === 'Em Negociação'
+            ? 'Aberta'
+            : null
+
+    const closedDate =
+      newStatus === 'Ganho' || newStatus === 'Perdido'
+        ? new Date().toISOString()
+        : undefined
+
+    set((state) => ({
+      leads: state.leads.map((l) =>
+        l.id === leadId ? { ...l, status: newStatus } : l,
+      ),
+      opportunities: oppStatus
+        ? state.opportunities.map((o) =>
+            o.leadId === leadId
+              ? {
+                  ...o,
+                  status: oppStatus as OppStatus,
+                  ...(closedDate ? { closedDate } : {}),
+                }
+              : o,
+          )
+        : state.opportunities,
+    }))
   },
 
   addOpportunity: async (opp) => {

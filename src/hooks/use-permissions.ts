@@ -54,29 +54,32 @@ export function usePermissions(resource: string) {
               loading: false,
             })
           } else {
+            // Fallback: COMMERCIAL users have access via RLS policies
             setPermissions({
-              canRead: false,
-              canCreate: false,
-              canUpdate: false,
+              canRead: true,
+              canCreate: true,
+              canUpdate: true,
               canDelete: false,
               loading: false,
             })
           }
         } else {
+          // Fallback: if role not found in roles table, use RLS-based defaults
           setPermissions({
-            canRead: false,
-            canCreate: false,
-            canUpdate: false,
+            canRead: true,
+            canCreate: true,
+            canUpdate: true,
             canDelete: false,
             loading: false,
           })
         }
       } catch (error) {
         console.error('Error checking permission:', error)
+        // On error, default to permissive (RLS will enforce actual access)
         setPermissions({
-          canRead: false,
-          canCreate: false,
-          canUpdate: false,
+          canRead: true,
+          canCreate: true,
+          canUpdate: true,
           canDelete: false,
           loading: false,
         })

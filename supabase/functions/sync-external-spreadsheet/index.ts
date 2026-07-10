@@ -5,12 +5,20 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 interface SyncStats {
   total: number
+  valid: number
   newLeads: number
   updatedLeads: number
   newOpps: number
   updatedOpps: number
   newCustomers: number
   auditLogs: number
+  errors: RowError[]
+}
+
+interface RowError {
+  row: number
+  reason: string
+  data?: Record<string, any>
 }
 
 function normalizeText(value: string | undefined | null): string {
@@ -18,16 +26,26 @@ function normalizeText(value: string | undefined | null): string {
   return value.trim()
 }
 
+function normalizeForCompare(value: string | undefined | null): string {
+  if (!value) return ''
+  return value
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9@._-]/g, '')
+}
+
 function parseBooleanFlag(value: string | undefined | null): boolean {
   if (!value) return false
-  const lower = value.toLowerCase().trim()
+  const lower = normalizeForCompare(value)
   return ['sim', 'yes', 'y', 's', 'true', '1', 'x', 'v', 'ok'].includes(lower)
 }
 
 function parseNegativeFlag(value: string | undefined | null): boolean {
   if (!value) return false
-  const lower = value.toLowerCase().trim()
-  return ['não', 'nao', 'no', 'n', 'false', '0'].includes(lower)
+  const lower = normalizeForCompare(value)
+  return ['nao', 'no', 'n', 'false', '0'].includes(lower)
 }
 
 function parseDate(value: string | undefined | null): string | null {
@@ -56,6 +74,74 @@ function parseCurrency(value: string | undefined | null): number {
   return isNaN(parsed) ? 0 : parsed
 }
 
+function normalizeStatus(
+  statusRaw: string,
+  qualificadoRaw: string,
+  fechouRaw: string,
+): string {
+  const statusNorm = normalizeForCompare(statusRaw)
+  const qualificadoNorm = normalizeForCompare(qualificadoRaw)
+  const fechouNorm = normalizeForCompare(fechouRaw)
+
+  if (parseNegativeFlag(qualificadoRaw) && !parseBooleanFlag(fechouRaw)) {
+    return 'Não Qualificado'
+  }
+
+  if (parseBooleanFlag(fechouRaw)) {
+    return 'Ganho'
+  }
+
+  if (
+    statusNorm.includes('vendaconcluida') ||
+    statusNorm.includes('vendaconcluida') ||
+    statusNorm.includes('fechado') ||
+    statusNorm.includes('ganho') ||
+    statusNorm.includes('sucesso') ||
+    statusNorm.includes('won') ||
+    statusNorm.includes('closed')
+  ) {
+    return 'Ganho'
+  }
+
+  if (
+    statusNorm.includes('perdido') ||
+    statusNorm.includes('cancelado') ||
+    statusNorm.includes('lost') ||
+    statusNorm.includes('perda')
+  ) {
+    return 'Perdido'
+  }
+
+  if (
+    statusNorm.includes('propostaenviada') ||
+    statusNorm.includes('proposta') ||
+    statusNorm.includes('negocia') ||
+    statusNorm.includes('negotiation') ||
+    statusNorm.includes('emnegociacao')
+  ) {
+    return 'Em Negociação'
+  }
+
+  if (
+    qualificadoRaw &&
+    (parseBooleanFlag(qualificadoRaw) ||
+      qualificadoNorm.includes('qualificado') ||
+      qualificadoNorm.includes('qualified'))
+  ) {
+    return 'Qualificado'
+  }
+
+  if (statusNorm.includes('qualificado') || statusNorm.includes('qualified')) {
+    return 'Qualificado'
+  }
+
+  if (statusNorm.includes('novo') || statusNorm.includes('new') || !statusRaw) {
+    return 'Novo'
+  }
+
+  return 'Novo'
+}
+
 async function logAuditEntry(
   supabase: ReturnType<typeof createClient>,
   userId: string | null,
@@ -71,18 +157,92 @@ async function logAuditEntry(
   })
 }
 
+interface LeadMatch {
+  conflict: boolean
+  leadId: string | null
+  matchType: string | null
+}
+
+async function findExistingLead(
+  supabase: ReturnType<typeof createClient>,
+  externalId: string,
+  cnpj: string,
+  email: string,
+  phone: string,
+): Promise<LeadMatch> {
+  const matches = new Map<string, string>()
+
+  if (externalId) {
+    const { data } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('id', externalId)
+      .maybeSingle()
+    if (data) matches.set(data.id, 'external_id')
+  }
+
+  if (cnpj) {
+    const cnpjClean = cnpj.replace(/\D/g, '')
+    if (cnpjClean) {
+      const { data } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('cnpj', cnpjClean)
+        .maybeSingle()
+      if (data && !matches.has(data.id)) matches.set(data.id, 'cnpj')
+    }
+  }
+
+  if (email) {
+    const { data } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle()
+    if (data && !matches.has(data.id)) matches.set(data.id, 'email')
+  }
+
+  if (phone) {
+    const phoneClean = phone.replace(/\D/g, '')
+    if (phoneClean) {
+      const { data } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('phone', phoneClean)
+        .maybeSingle()
+      if (data && !matches.has(data.id)) matches.set(data.id, 'phone')
+    }
+  }
+
+  if (matches.size > 1) {
+    return { conflict: true, leadId: null, matchType: null }
+  }
+
+  if (matches.size === 1) {
+    const [leadId, matchType] = matches.entries().next().value as [
+      string,
+      string,
+    ]
+    return { conflict: false, leadId, matchType }
+  }
+
+  return { conflict: false, leadId: null, matchType: null }
+}
+
 export async function processSync(
   supabase: ReturnType<typeof createClient>,
   adminUserId: string | null,
 ): Promise<{ success: boolean; message: string; stats: SyncStats }> {
   const stats: SyncStats = {
     total: 0,
+    valid: 0,
     newLeads: 0,
     updatedLeads: 0,
     newOpps: 0,
     updatedOpps: 0,
     newCustomers: 0,
     auditLogs: 0,
+    errors: [],
   }
 
   const SHEET_URL =
@@ -104,11 +264,7 @@ export async function processSync(
   }
 
   const headers = (records[0] as string[]).map((h: string) =>
-    h
-      .toLowerCase()
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, ''),
+    normalizeForCompare(h),
   )
 
   const findIdx = (...patterns: string[]): number => {
@@ -120,10 +276,7 @@ export async function processSync(
   }
 
   const idxData = findIdx('data', 'date')
-  let idxNome = findIdx('nome', 'contato', 'name', 'cliente')
-  if (idxNome === -1) {
-    idxNome = 1
-  }
+  const idxNome = findIdx('nome', 'contato', 'name', 'cliente')
   const idxEmpresa = findIdx('empresa', 'company')
   const idxTelefone = findIdx(
     'telefone',
@@ -132,8 +285,10 @@ export async function processSync(
     'whats',
     'whatsapp',
   )
-  const idxEmail = findIdx('email', 'e-mail')
-  const idxObs = findIdx('observacao', 'observacoes', 'obs', 'notes', 'note')
+  const idxEmail = findIdx('email')
+  const idxCnpj = findIdx('cnpj', 'cpfcnpj', 'documento')
+  const idxExternalId = findIdx('id', 'externalid', 'codigo', 'cod')
+  const idxObs = findIdx('observacao', 'obs', 'notes', 'note')
   const idxPlataforma = findIdx('plataforma', 'origem', 'origin', 'canal')
   const idxInteresse = findIdx(
     'interesse',
@@ -142,17 +297,7 @@ export async function processSync(
     'service',
     'objetivo',
   )
-  let idxResponsavel = findIdx(
-    'responsavel',
-    'responsável',
-    'vendedor',
-    'seller',
-    'owner',
-  )
-  if (idxResponsavel === -1) {
-    // Fallback to Column E (index 4) if it's the known structure
-    idxResponsavel = 4
-  }
+  const idxResponsavel = findIdx('responsavel', 'vendedor', 'seller', 'owner')
   const idxRespondeu = findIdx('respondeu', 'responded', 'reply')
   const idxQualificado = findIdx('qualificado', 'qualified')
   const idxFechou = findIdx('fechou', 'closed', 'won', 'ganho')
@@ -169,7 +314,7 @@ export async function processSync(
 
   const findOwnerByName = async (name: string): Promise<string | null> => {
     if (!name) return null
-    const cacheKey = name.toLowerCase().trim()
+    const cacheKey = normalizeForCompare(name)
     if (ownerCache.has(cacheKey)) return ownerCache.get(cacheKey)!
 
     const { data: matchedId, error: rpcError } = await supabase.rpc(
@@ -189,19 +334,20 @@ export async function processSync(
       return matchedId as string
     }
 
-    console.warn(
-      `[sync] No profile match for responsible: "${name}" — lead will be unassigned (user_id = NULL)`,
-    )
     ownerCache.set(cacheKey, null)
     return null
   }
 
   for (let i = 1; i < records.length; i++) {
     const row = records[i] as string[]
+    const rowNum = i + 1
+
     const nome = getCell(row, idxNome)
     const empresa = getCell(row, idxEmpresa) || nome || 'Empresa Desconhecida'
     const telefone = getCell(row, idxTelefone)
     const email = getCell(row, idxEmail)
+    const cnpj = getCell(row, idxCnpj)
+    const externalId = getCell(row, idxExternalId)
     const observacao = getCell(row, idxObs)
     const plataforma = getCell(row, idxPlataforma) || 'Planilha'
     const interesse = getCell(row, idxInteresse)
@@ -214,8 +360,20 @@ export async function processSync(
     const quantidadeRaw = getCell(row, idxQuantidade)
     const dataRaw = getCell(row, idxData)
 
-    if (!nome && !empresa && !telefone && !email) continue
+    if (!nome && !empresa && !telefone && !email && !cnpj) continue
     stats.total++
+
+    // Validation
+    if (!nome && !empresa) {
+      stats.errors.push({
+        row: rowNum,
+        reason: 'Missing required name/company field',
+        data: { email, phone: telefone },
+      })
+      continue
+    }
+
+    stats.valid++
 
     const contact = nome || empresa || 'Sem Nome'
     const parsedValue = parseCurrency(valorRaw)
@@ -224,69 +382,45 @@ export async function processSync(
       : 1
     const parsedDate = parseDate(dataRaw)
     const responded = parseBooleanFlag(respondeuRaw)
+    const cnpjClean = cnpj ? cnpj.replace(/\D/g, '') : ''
 
     const ownerId = responsavel ? await findOwnerByName(responsavel) : null
 
-    if (responsavel && !ownerId) {
-      console.warn(
-        `[sync] No profile match for responsible: "${responsavel}" — lead will be unassigned (user_id = NULL)`,
-      )
+    const mappedStatus = normalizeStatus(statusRaw, qualificadoRaw, fechouRaw)
+
+    // Deduplication: external ID > CNPJ > email > phone
+    const match = await findExistingLead(
+      supabase,
+      externalId,
+      cnpjClean,
+      email,
+      telefone,
+    )
+
+    if (match.conflict) {
+      stats.errors.push({
+        row: rowNum,
+        reason:
+          'Multiple conflicting matches found (CNPJ/Email/Phone match different leads)',
+        data: {
+          contact,
+          company: empresa,
+          email,
+          phone: telefone,
+          cnpj: cnpjClean,
+        },
+      })
+      continue
     }
 
-    let mappedStatus = 'Novo'
-    if (parseNegativeFlag(qualificadoRaw) && !parseBooleanFlag(fechouRaw)) {
-      mappedStatus = 'Não Qualificado'
-    } else if (parseBooleanFlag(fechouRaw)) {
-      mappedStatus = 'Ganho'
-    } else {
-      const statusLower = statusRaw.toLowerCase()
-      if (statusLower.match(/ganho|fechado|sucesso/)) mappedStatus = 'Ganho'
-      else if (statusLower.match(/perdido|cancelado/)) mappedStatus = 'Perdido'
-      else if (statusLower.match(/negocia/)) mappedStatus = 'Em Negociação'
-      else if (statusLower.match(/qualificado/)) mappedStatus = 'Qualificado'
-      else if (qualificadoRaw && parseBooleanFlag(qualificadoRaw))
-        mappedStatus = 'Qualificado'
-    }
-
-    // Lead identification: prioritize phone, then name (contact), then email, then company
     let existingLead: any = null
-    if (telefone) {
+    if (match.leadId) {
       const { data } = await supabase
         .from('leads')
         .select(
-          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
+          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at, cnpj',
         )
-        .eq('phone', telefone)
-        .maybeSingle()
-      existingLead = data
-    }
-    if (!existingLead && nome) {
-      const { data } = await supabase
-        .from('leads')
-        .select(
-          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
-        )
-        .eq('contact', nome)
-        .maybeSingle()
-      existingLead = data
-    }
-    if (!existingLead && email) {
-      const { data } = await supabase
-        .from('leads')
-        .select(
-          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
-        )
-        .eq('email', email)
-        .maybeSingle()
-      existingLead = data
-    }
-    if (!existingLead && empresa !== 'Empresa Desconhecida') {
-      const { data } = await supabase
-        .from('leads')
-        .select(
-          'id, status, user_id, contact, company, email, phone, notes, objectives, origin, responded, estimated_value, quantity, created_at',
-        )
-        .eq('company', empresa)
+        .eq('id', match.leadId)
         .maybeSingle()
       existingLead = data
     }
@@ -307,6 +441,10 @@ export async function processSync(
       country: 'Brazil',
     }
 
+    if (cnpjClean) {
+      leadPayload.cnpj = cnpjClean
+    }
+
     if (parsedDate) {
       leadPayload.created_at = parsedDate
     }
@@ -318,7 +456,6 @@ export async function processSync(
     let leadId: string | null = existingLead?.id || null
 
     if (existingLead) {
-      // Check if anything actually changed to avoid spamming audit logs
       const hasChanges =
         existingLead.status !== mappedStatus ||
         existingLead.user_id !== ownerId ||
@@ -338,49 +475,31 @@ export async function processSync(
           .update(leadPayload)
           .eq('id', leadId)
 
-        if (!error) {
-          stats.updatedLeads++
-
-          const responsibilityChanged = existingLead.user_id !== ownerId
-          const auditMetadata = {
-            source: 'spreadsheet_sync',
-            responsibility_changed: responsibilityChanged,
-            previous_user_id: existingLead.user_id,
-            new_user_id: ownerId,
-            responsible_name_provided: responsavel || null,
-            responsible_match_found: !!ownerId,
-            before: {
-              status: existingLead.status,
-              user_id: existingLead.user_id,
-              contact: existingLead.contact,
-              phone: existingLead.phone,
-              email: existingLead.email,
-              notes: existingLead.notes,
-              objectives: existingLead.objectives,
-              origin: existingLead.origin,
-              responded: existingLead.responded,
-              estimated_value: existingLead.estimated_value,
-              quantity: existingLead.quantity,
-            },
-            after: {
-              status: mappedStatus,
-              user_id: ownerId,
-              contact,
-              phone: telefone || null,
-              email: email || null,
-              notes: observacao || null,
-              objectives: interesse || null,
-              origin: plataforma,
-              responded,
-              estimated_value: parsedValue,
-              quantity: parsedQty,
-            },
-            synced_by: adminUserId,
-          }
-
-          await logAuditEntry(supabase, adminUserId, leadId!, auditMetadata)
-          stats.auditLogs++
+        if (error) {
+          stats.errors.push({
+            row: rowNum,
+            reason: `Database error updating lead: ${error.message}`,
+            data: { contact, leadId },
+          })
+          continue
         }
+
+        stats.updatedLeads++
+
+        const auditMetadata = {
+          source: 'spreadsheet_sync',
+          responsibility_changed: existingLead.user_id !== ownerId,
+          previous_user_id: existingLead.user_id,
+          new_user_id: ownerId,
+          responsible_name_provided: responsavel || null,
+          responsible_match_found: !!ownerId,
+          previous_status: existingLead.status,
+          new_status: mappedStatus,
+          synced_by: adminUserId,
+        }
+
+        await logAuditEntry(supabase, adminUserId, leadId!, auditMetadata)
+        stats.auditLogs++
       }
     } else {
       const { data: newLead, error } = await supabase
@@ -388,9 +507,17 @@ export async function processSync(
         .insert(leadPayload)
         .select('id')
         .single()
+
       if (error) {
-        console.error('Error inserting lead:', error)
-      } else if (newLead) {
+        stats.errors.push({
+          row: rowNum,
+          reason: `Database error inserting lead: ${error.message}`,
+          data: { contact, company: empresa },
+        })
+        continue
+      }
+
+      if (newLead) {
         leadId = newLead.id
         stats.newLeads++
 
@@ -410,25 +537,13 @@ export async function processSync(
       }
     }
 
-    if (responsavel && !ownerId && existingLead && !existingLead.user_id) {
-      await logAuditEntry(supabase, adminUserId, leadId!, {
-        source: 'spreadsheet_sync',
-        event: 'unmatched_responsible',
-        responsible_name_provided: responsavel,
-        responsible_match_found: false,
-        lead_contact: contact,
-        lead_company: empresa,
-        synced_by: adminUserId,
-      })
-      stats.auditLogs++
-    }
-
     if (!leadId) continue
 
+    // Opportunity sync
     if (['Em Negociação', 'Ganho', 'Perdido'].includes(mappedStatus)) {
       const { data: opps } = await supabase
         .from('opportunities')
-        .select('id')
+        .select('id, status, closed_date')
         .eq('lead_id', leadId)
       const opp = opps?.[0]
 
@@ -436,11 +551,17 @@ export async function processSync(
       if (mappedStatus === 'Ganho') oppStatus = 'Ganha'
       if (mappedStatus === 'Perdido') oppStatus = 'Perdida'
 
+      const oppClosedDate =
+        mappedStatus === 'Ganho' || mappedStatus === 'Perdido'
+          ? parsedDate || new Date().toISOString()
+          : null
+
       const oppPayload: Record<string, any> = {
         status: oppStatus,
         value: parsedValue,
         service: interesse || 'Não especificado',
         quantity: parsedQty,
+        closed_date: oppClosedDate,
       }
 
       if (opp) {
@@ -458,11 +579,13 @@ export async function processSync(
           value: parsedValue,
           status: oppStatus,
           quantity: parsedQty,
+          closed_date: oppClosedDate,
         })
         if (!error) stats.newOpps++
       }
     }
 
+    // Customer creation for won leads
     if (mappedStatus === 'Ganho') {
       const { data: existingCustomer } = await supabase
         .from('customers')
@@ -477,6 +600,7 @@ export async function processSync(
           company: empresa,
           email: email || null,
           phone: telefone || null,
+          cnpj: cnpjClean || null,
         })
         if (!error) stats.newCustomers++
       }
@@ -487,7 +611,10 @@ export async function processSync(
     key: 'sync_spreadsheet_last_run',
     value: {
       date: new Date().toISOString(),
-      stats,
+      stats: {
+        ...stats,
+        errors: stats.errors.slice(0, 50),
+      },
     },
     updated_at: new Date().toISOString(),
   })
@@ -513,27 +640,55 @@ Deno.serve(async (req: Request) => {
     let isAdmin = false
 
     const authHeader = req.headers.get('authorization')
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '')
-      const { data: userData } = await supabase.auth.getUser(token)
-      if (userData?.user) {
-        adminUserId = userData.user.id
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', adminUserId)
-          .maybeSingle()
-        isAdmin = profile?.role === 'ADMIN'
-      }
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Unauthorized: missing auth token',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        },
+      )
     }
 
+    const token = authHeader.replace('Bearer ', '')
+    const { data: userData } = await supabase.auth.getUser(token)
+
+    if (!userData?.user) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Unauthorized: invalid token',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        },
+      )
+    }
+
+    adminUserId = userData.user.id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', adminUserId)
+      .maybeSingle()
+
+    isAdmin = profile?.role === 'ADMIN'
+
     if (!isAdmin) {
-      const { data: adminUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', 'diretor@sato7.com.br')
-        .maybeSingle()
-      adminUserId = adminUser?.id || null
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Forbidden: admin access required',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        },
+      )
     }
 
     const result = await processSync(supabase, adminUserId)
@@ -549,12 +704,14 @@ Deno.serve(async (req: Request) => {
         error: error.message,
         stats: {
           total: 0,
+          valid: 0,
           newLeads: 0,
           updatedLeads: 0,
           newOpps: 0,
           updatedOpps: 0,
           newCustomers: 0,
           auditLogs: 0,
+          errors: [],
         },
       }),
       {

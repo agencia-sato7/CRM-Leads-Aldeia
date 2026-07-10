@@ -3,16 +3,37 @@ import { useDataStore } from '@/stores/use-data-store'
 export function FunnelChartWidget({ region, userId, startDate, endDate }: any) {
   const { leads, opportunities } = useDataStore()
 
-  const relevantLeads = leads.filter(
-    (l) =>
-      (userId === 'all' || l.userId === userId) &&
-      (region === 'all' || l.country === region) &&
-      l.createdAt.substring(0, 10) >= startDate &&
-      l.createdAt.substring(0, 10) <= endDate,
-  )
-  const relevantOpps = opportunities.filter((o) =>
-    relevantLeads.some((l) => l.id === o.leadId),
-  )
+  const relevantLeads = leads.filter((l) => {
+    if (userId !== 'all' && l.userId !== userId) return false
+    if (region !== 'all' && l.country !== region) return false
+    const dateStr = l.createdAt.substring(0, 10)
+    return dateStr >= startDate && dateStr <= endDate
+  })
+
+  const leadIds = new Set(relevantLeads.map((l) => l.id))
+
+  const relevantOpps = opportunities.filter((o) => {
+    if (!leadIds.has(o.leadId)) return false
+    if (userId !== 'all' && o.userId !== userId) return false
+    const lead = leads.find((l) => l.id === o.leadId)
+    if (!lead) return false
+    if (region !== 'all' && lead.country !== region) return false
+    return true
+  })
+
+  const wonOpps = relevantOpps.filter((o) => {
+    if (o.status !== 'Ganha') return false
+    const dateToCheck = o.closedDate || o.createdAt
+    const dateStr = dateToCheck.substring(0, 10)
+    return dateStr >= startDate && dateStr <= endDate
+  })
+
+  const lostOpps = relevantOpps.filter((o) => {
+    if (o.status !== 'Perdida') return false
+    const dateToCheck = o.closedDate || o.createdAt
+    const dateStr = dateToCheck.substring(0, 10)
+    return dateStr >= startDate && dateStr <= endDate
+  })
 
   const funnelData = [
     {
@@ -28,18 +49,18 @@ export function FunnelChartWidget({ region, userId, startDate, endDate }: any) {
       color: 'bg-indigo-500',
     },
     {
-      label: 'Oportunidades',
-      value: relevantOpps.length,
+      label: 'Em Negociação',
+      value: relevantLeads.filter((l) => l.status === 'Em Negociação').length,
       color: 'bg-purple-500',
     },
     {
       label: 'Vendas Ganhas',
-      value: relevantOpps.filter((o) => o.status === 'Ganha').length,
+      value: wonOpps.length,
       color: 'bg-emerald-500',
     },
     {
       label: 'Vendas Perdidas',
-      value: relevantOpps.filter((o) => o.status === 'Perdida').length,
+      value: lostOpps.length,
       color: 'bg-red-500',
     },
   ]

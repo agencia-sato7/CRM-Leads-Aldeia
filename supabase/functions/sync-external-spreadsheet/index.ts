@@ -1,13 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { parse } from 'npm:csv-parse@5.5.6/sync'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 interface SyncStats {
   total: number
@@ -193,40 +187,6 @@ export async function processSync(
     if (matchedId) {
       ownerCache.set(cacheKey, matchedId as string)
       return matchedId as string
-    }
-
-    const slug = name
-      .toLowerCase()
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '.')
-      .replace(/^\.+|\.+$/g, '')
-    const newEmail = `${slug}@sato7.com.br`
-
-    const { data: newUser, error: createError } =
-      await supabase.auth.admin.createUser({
-        email: newEmail,
-        password: 'Skip@Pass',
-        email_confirm: true,
-        user_metadata: { name, role: 'COMMERCIAL' },
-      })
-
-    if (newUser?.user?.id) {
-      ownerCache.set(cacheKey, newUser.user.id)
-      return newUser.user.id
-    }
-
-    if (createError) {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', newEmail)
-        .maybeSingle()
-      if (existingProfile?.id) {
-        ownerCache.set(cacheKey, existingProfile.id)
-        return existingProfile.id
-      }
     }
 
     console.warn(

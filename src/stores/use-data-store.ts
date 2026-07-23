@@ -872,11 +872,11 @@ export const useDataStore = create<DataStore>((set, get) => ({
               ? {
                   ...o,
                   status: oppStatus as OppStatus,
-                  ...(closedDate ? { closedDate } : {}),
+                  closedDate: closedDate,
                 }
               : o,
           )
-        : state.opportunities,
+        : state.opportunities.filter((o) => o.leadId !== leadId),
     }))
   },
 

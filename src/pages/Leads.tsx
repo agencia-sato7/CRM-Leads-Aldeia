@@ -1103,19 +1103,12 @@ export default function Leads() {
                       <div
                         className="inline-block"
                         onClick={() => {
-                          const isTerminal =
-                            lead.status === 'Ganho' || lead.status === 'Perdido'
                           const notOwnerBlock =
                             currentUser.role !== 'ADMIN' &&
                             lead.userId &&
                             lead.userId !== currentUser.id
 
-                          if (isTerminal) {
-                            toast.error('Ação Bloqueada', {
-                              description:
-                                'Leads ganhos ou perdidos não podem ter seu status alterado.',
-                            })
-                          } else if (notOwnerBlock) {
+                          if (notOwnerBlock) {
                             toast.error('Ação Bloqueada', {
                               description:
                                 'Apenas o responsável ou um administrador pode alterar o status deste lead.',
@@ -1126,8 +1119,6 @@ export default function Leads() {
                         <Select
                           value={lead.status}
                           disabled={
-                            lead.status === 'Perdido' ||
-                            lead.status === 'Ganho' ||
                             !(
                               currentUser.role === 'ADMIN' ||
                               lead.userId === currentUser.id ||
@@ -1262,15 +1253,7 @@ export default function Leads() {
                               'Perdido',
                               'Não Qualificado',
                             ].map((s) => (
-                              <SelectItem
-                                key={s}
-                                value={s}
-                                disabled={
-                                  (s === 'Novo' && lead.status !== 'Novo') ||
-                                  (lead.status === 'Em Negociação' &&
-                                    s === 'Qualificado')
-                                }
-                              >
+                              <SelectItem key={s} value={s}>
                                 {s}
                               </SelectItem>
                             ))}
@@ -2083,6 +2066,31 @@ export default function Leads() {
                     </Button>
                   </div>
                 </div>
+                <div>
+                  <label className="text-sm font-medium">Status</label>
+                  <Select
+                    value={editLead.status}
+                    onValueChange={(v) =>
+                      setEditLead({ ...editLead, status: v as LeadStatus })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Novo">Novo</SelectItem>
+                      <SelectItem value="Qualificado">Qualificado</SelectItem>
+                      <SelectItem value="Em Negociação">
+                        Em Negociação
+                      </SelectItem>
+                      <SelectItem value="Ganho">Ganho</SelectItem>
+                      <SelectItem value="Perdido">Perdido</SelectItem>
+                      <SelectItem value="Não Qualificado">
+                        Não Qualificado
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="col-span-2 flex items-center gap-2 mt-2">
                   <input
                     type="checkbox"
@@ -2199,6 +2207,23 @@ export default function Leads() {
               </div>
               <Button
                 onClick={async () => {
+                  const originalLead = paginatedLeads.find(
+                    (l) => l.id === editLead.id,
+                  )
+                  if (originalLead && originalLead.status !== editLead.status) {
+                    try {
+                      await transitionLeadStage(
+                        editLead.id,
+                        editLead.status,
+                        'manual',
+                      )
+                    } catch (err: any) {
+                      toast.error('Erro ao alterar status', {
+                        description: err.message,
+                      })
+                      return
+                    }
+                  }
                   await updateLead(editLead.id, editLead)
                   setEditLead(null)
                   fetchLeads()

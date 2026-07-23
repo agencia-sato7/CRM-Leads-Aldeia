@@ -6,7 +6,8 @@ export interface TransitionResult {
   lead_id: string
   previous_status: string
   new_status: string
-  opportunity_status: string | null
+  previous_opportunity_status: string | null
+  new_opportunity_status: string | null
   closed_date: string | null
 }
 

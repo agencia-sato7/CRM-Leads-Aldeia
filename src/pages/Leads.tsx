@@ -1104,9 +1104,7 @@ export default function Leads() {
                         className="inline-block"
                         onClick={() => {
                           const isTerminal =
-                            lead.status === 'Ganho' ||
-                            lead.status === 'Perdido' ||
-                            lead.status === 'Não Qualificado'
+                            lead.status === 'Ganho' || lead.status === 'Perdido'
                           const notOwnerBlock =
                             currentUser.role !== 'ADMIN' &&
                             lead.userId &&
@@ -1130,7 +1128,6 @@ export default function Leads() {
                           disabled={
                             lead.status === 'Perdido' ||
                             lead.status === 'Ganho' ||
-                            lead.status === 'Não Qualificado' ||
                             !(
                               currentUser.role === 'ADMIN' ||
                               lead.userId === currentUser.id ||
@@ -1138,60 +1135,16 @@ export default function Leads() {
                             )
                           }
                           onValueChange={async (v) => {
-                            if (
-                              lead.status === 'Em Negociação' &&
-                              v === 'Qualificado'
-                            ) {
-                              toast.error('Operação não permitida', {
-                                description: (
-                                  <span className="text-black font-medium">
-                                    Não é possível retroceder um lead "Em
-                                    Negociação" para "Qualificado".
-                                  </span>
-                                ),
-                                style: {
-                                  backgroundColor: '#fef2f2',
-                                  color: '#000000',
-                                  borderColor: '#fecaca',
-                                },
-                              })
-                              return
-                            }
-                            if (
-                              [
-                                'Qualificado',
-                                'Em Negociação',
-                                'Ganho',
-                              ].includes(v) &&
-                              lead.meetings.length === 0
-                            ) {
-                              toast.error('Reunião pendente', {
-                                description: (
-                                  <span className="text-black font-medium">
-                                    É necessário ter pelo menos uma reunião
-                                    concluída para avançar o lead para esta
-                                    etapa.
-                                  </span>
-                                ),
-                                style: {
-                                  backgroundColor: '#fef2f2',
-                                  color: '#000000',
-                                  borderColor: '#fecaca',
-                                },
-                              })
-                              return
-                            }
-                            if (['Em Negociação', 'Ganho'].includes(v)) {
-                              const hasOpp = opportunities.some(
-                                (o) => o.leadId === lead.id,
-                              )
-                              if (!hasOpp) {
-                                toast.error('Oportunidade pendente', {
+                            if (v !== 'Ganho') {
+                              if (
+                                lead.status === 'Em Negociação' &&
+                                v === 'Qualificado'
+                              ) {
+                                toast.error('Operação não permitida', {
                                   description: (
                                     <span className="text-black font-medium">
-                                      É necessário criar uma oportunidade para
-                                      este lead antes de avançá-lo para Em
-                                      Negociação.
+                                      Não é possível retroceder um lead "Em
+                                      Negociação" para "Qualificado".
                                     </span>
                                   ),
                                   style: {
@@ -1202,24 +1155,16 @@ export default function Leads() {
                                 })
                                 return
                               }
-                            }
-                            if (
-                              lead.status === 'Em Negociação' &&
-                              ['Ganho', 'Perdido'].includes(v)
-                            ) {
-                              const opp = opportunities.find(
-                                (o) => o.leadId === lead.id,
-                              )
                               if (
-                                opp &&
-                                !['Ganha', 'Perdida'].includes(opp.status)
+                                ['Qualificado', 'Em Negociação'].includes(v) &&
+                                lead.meetings.length === 0
                               ) {
-                                toast.error('Oportunidade em andamento', {
+                                toast.error('Reunião pendente', {
                                   description: (
                                     <span className="text-black font-medium">
-                                      Não é possível avançar o status do lead
-                                      para Ganho ou Perdido enquanto a
-                                      oportunidade não for concluída.
+                                      É necessário ter pelo menos uma reunião
+                                      concluída para avançar o lead para esta
+                                      etapa.
                                     </span>
                                   ),
                                   style: {
@@ -1229,6 +1174,56 @@ export default function Leads() {
                                   },
                                 })
                                 return
+                              }
+                              if (v === 'Em Negociação') {
+                                const hasOpp = opportunities.some(
+                                  (o) => o.leadId === lead.id,
+                                )
+                                if (!hasOpp) {
+                                  toast.error('Oportunidade pendente', {
+                                    description: (
+                                      <span className="text-black font-medium">
+                                        É necessário criar uma oportunidade para
+                                        este lead antes de avançá-lo para Em
+                                        Negociação.
+                                      </span>
+                                    ),
+                                    style: {
+                                      backgroundColor: '#fef2f2',
+                                      color: '#000000',
+                                      borderColor: '#fecaca',
+                                    },
+                                  })
+                                  return
+                                }
+                              }
+                              if (
+                                lead.status === 'Em Negociação' &&
+                                v === 'Perdido'
+                              ) {
+                                const opp = opportunities.find(
+                                  (o) => o.leadId === lead.id,
+                                )
+                                if (
+                                  opp &&
+                                  !['Ganha', 'Perdida'].includes(opp.status)
+                                ) {
+                                  toast.error('Oportunidade em andamento', {
+                                    description: (
+                                      <span className="text-black font-medium">
+                                        Não é possível avançar o status do lead
+                                        para Perdido enquanto a oportunidade não
+                                        for concluída.
+                                      </span>
+                                    ),
+                                    style: {
+                                      backgroundColor: '#fef2f2',
+                                      color: '#000000',
+                                      borderColor: '#fecaca',
+                                    },
+                                  })
+                                  return
+                                }
                               }
                             }
                             try {

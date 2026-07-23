@@ -131,10 +131,7 @@ function normalizeStatus(
     return 'Qualificado'
   }
 
-  if (
-    statusNorm.includes('qualificado') ||
-    statusNorm.includes('qualified')
-  ) {
+  if (statusNorm.includes('qualificado') || statusNorm.includes('qualified')) {
     return 'Qualificado'
   }
 
@@ -222,7 +219,10 @@ async function findExistingLead(
   }
 
   if (matches.size === 1) {
-    const [leadId, matchType] = matches.entries().next().value as [string, string]
+    const [leadId, matchType] = matches.entries().next().value as [
+      string,
+      string,
+    ]
     return { conflict: false, leadId, matchType }
   }
 
@@ -278,13 +278,25 @@ export async function processSync(
   const idxData = findIdx('data', 'date')
   const idxNome = findIdx('nome', 'contato', 'name', 'cliente')
   const idxEmpresa = findIdx('empresa', 'company')
-  const idxTelefone = findIdx('telefone', 'celular', 'phone', 'whats', 'whatsapp')
+  const idxTelefone = findIdx(
+    'telefone',
+    'celular',
+    'phone',
+    'whats',
+    'whatsapp',
+  )
   const idxEmail = findIdx('email')
   const idxCnpj = findIdx('cnpj', 'cpfcnpj', 'documento')
   const idxExternalId = findIdx('id', 'externalid', 'codigo', 'cod')
   const idxObs = findIdx('observacao', 'obs', 'notes', 'note')
   const idxPlataforma = findIdx('plataforma', 'origem', 'origin', 'canal')
-  const idxInteresse = findIdx('interesse', 'servico', 'produto', 'service', 'objetivo')
+  const idxInteresse = findIdx(
+    'interesse',
+    'servico',
+    'produto',
+    'service',
+    'objetivo',
+  )
   const idxResponsavel = findIdx('responsavel', 'vendedor', 'seller', 'owner')
   const idxRespondeu = findIdx('respondeu', 'responded', 'reply')
   const idxQualificado = findIdx('qualificado', 'qualified')
@@ -311,7 +323,10 @@ export async function processSync(
     )
 
     if (rpcError) {
-      console.warn(`[sync] RPC error finding profile for "${name}":`, rpcError.message)
+      console.warn(
+        `[sync] RPC error finding profile for "${name}":`,
+        rpcError.message,
+      )
     }
 
     if (matchedId) {
@@ -374,13 +389,26 @@ export async function processSync(
     const mappedStatus = normalizeStatus(statusRaw, qualificadoRaw, fechouRaw)
 
     // Deduplication: external ID > CNPJ > email > phone
-    const match = await findExistingLead(supabase, externalId, cnpjClean, email, telefone)
+    const match = await findExistingLead(
+      supabase,
+      externalId,
+      cnpjClean,
+      email,
+      telefone,
+    )
 
     if (match.conflict) {
       stats.errors.push({
         row: rowNum,
-        reason: 'Multiple conflicting matches found (CNPJ/Email/Phone match different leads)',
-        data: { contact, company: empresa, email, phone: telefone, cnpj: cnpjClean },
+        reason:
+          'Multiple conflicting matches found (CNPJ/Email/Phone match different leads)',
+        data: {
+          contact,
+          company: empresa,
+          email,
+          phone: telefone,
+          cnpj: cnpjClean,
+        },
       })
       continue
     }
@@ -614,7 +642,10 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('authorization')
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized: missing auth token' }),
+        JSON.stringify({
+          success: false,
+          error: 'Unauthorized: missing auth token',
+        }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
@@ -627,7 +658,10 @@ Deno.serve(async (req: Request) => {
 
     if (!userData?.user) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized: invalid token' }),
+        JSON.stringify({
+          success: false,
+          error: 'Unauthorized: invalid token',
+        }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
@@ -646,7 +680,10 @@ Deno.serve(async (req: Request) => {
 
     if (!isAdmin) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Forbidden: admin access required' }),
+        JSON.stringify({
+          success: false,
+          error: 'Forbidden: admin access required',
+        }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 403,
